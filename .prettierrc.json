@@ -1,0 +1,33 @@
+{
+  "printWidth": 100,
+  "singleQuote": true,
+  "bracketSpacing": false,
+  "plugins": [
+    "prettier-plugin-tailwindcss",
+    "prettier-plugin-organize-attributes"
+  ],
+  "tailwindConfig": "tailwind.config.ts",
+  "attributeGroups": [
+    "^(:|v-)is$",
+    "^v-for$",
+    "^v-(if|else-if|else|show|cloak)$",
+    "^v-(once|pre|memo)$",
+    "^:?id$",
+    "^:?key$",
+    "^:?ref$",
+    "^(v-)?slot$",
+    "^#",
+    "^v-model$",
+    "^v-(?!bind|on|html|text)",
+    "^class$",
+    "^(v-bind)?:class$",
+    "^((v-bind)?:)?(?!data-|v-|:|@|#)",
+    "$DEFAULT",
+    "^((v-bind)?:)?data-",
+    "^v-bind$",
+    "^v-on",
+    "^@",
+    "^v-html$",
+    "^v-text$"
+  ]
+}
