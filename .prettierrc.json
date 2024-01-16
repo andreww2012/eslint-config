@@ -3,8 +3,8 @@
   "singleQuote": true,
   "bracketSpacing": false,
   "plugins": [
-    "prettier-plugin-tailwindcss",
-    "prettier-plugin-organize-attributes"
+    "prettier-plugin-organize-attributes",
+    "prettier-plugin-tailwindcss"
   ],
   "tailwindConfig": "tailwind.config.ts",
   "attributeGroups": [
