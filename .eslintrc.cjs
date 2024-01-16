@@ -56,7 +56,9 @@ const TYPESCRIPT = {
 
 const VUE = {
   vue2: __FALSE__,
-  'vue3.3': true,
+  // ⚠️ If say you use Vue 3.4, then you must also enable earlier 3.x versions of Vue (3.3)
+  '>=vue3.3': true,
+  '>=vue3.4': true,
   a11y: true,
   extensionRules: true,
   // ⚠️ May come in handy when auto-imports are not disabled OR they are,
@@ -222,7 +224,9 @@ const VUE_RULES = {
   ],
   'vue/define-emits-declaration': ERROR,
   'vue/define-props-declaration': [ERROR, 'runtime'],
-  'vue/define-macros-order': ERROR,
+  'vue/define-macros-order': [ERROR, {
+    ...(VUE['>=vue3.4'] && {defineExposeLast: true})
+  }],
   'vue/html-button-has-type': ERROR,
   'vue/html-self-closing': [
     ERROR,
@@ -561,7 +565,7 @@ module.exports = {
       ]),
       rules: {
         ...VUE_RULES,
-        ...(VUE['vue3.3'] && VUE_3_3_RULES),
+        ...(VUE['>=vue3.3'] && VUE_3_3_RULES),
         ...(VUE.a11y && VUE_A11Y_RULES),
         ...(VUE.extensionRules && VUE_EXTENSION_RULES),
       },
