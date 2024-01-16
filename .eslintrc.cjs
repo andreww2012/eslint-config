@@ -482,7 +482,7 @@ module.exports = {
     // 🌐 https://github.com/eslint-community/eslint-plugin-promise
     'plugin:promise/recommended',
     // 🌐 https://github.com/eslint-community/eslint-plugin-security
-    'plugin:security/recommended',
+    'plugin:security/recommended-legacy',
 
     // 🔴 Must be at the end of the list as it disables incompatible rules from the previous configs
     // 🌐 https://github.com/prettier/eslint-config-prettier
