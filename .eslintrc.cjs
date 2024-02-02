@@ -105,7 +105,7 @@ const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   '@typescript-eslint/no-import-type-side-effects': ERROR,
   '@typescript-eslint/no-dynamic-delete': WARNING,
   '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
-  '@typescript-eslint/no-explicit-any': [ERROR, {fixToUnknown: true, ignoreRestArgs: true}],
+  '@typescript-eslint/no-explicit-any': [WARNING, {ignoreRestArgs: true}],
   '@typescript-eslint/prefer-literal-enum-member': [ERROR, {allowBitwiseExpressions: true}],
 
   // Conflicting with corresponding base rules
@@ -259,6 +259,7 @@ const VUE_RULES = {
   'vue/prefer-true-attribute-shorthand': ERROR,
   'vue/require-default-prop': OFF,
   'vue/require-explicit-emits': OFF,
+  'vue/require-explicit-slots': ERROR,
   'vue/require-typed-object-prop': ERROR,
   'vue/require-typed-ref': ERROR,
   'vue/v-for-delimiter-style': ERROR,
