@@ -645,5 +645,7 @@ module.exports = {
         'import/no-default-export': OFF,
       },
     },
+
+    ...OVERRIDES,
   ]),
 };
