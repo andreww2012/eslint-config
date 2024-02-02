@@ -569,6 +569,10 @@ module.exports = {
         ...(VUE['>=vue3.3'] && VUE_3_3_RULES),
         ...(VUE.a11y && VUE_A11Y_RULES),
         ...(VUE.extensionRules && VUE_EXTENSION_RULES),
+
+        '@typescript-eslint/prefer-function-type': OFF,
+        '@typescript-eslint/unified-signatures': OFF,
+        'import/first': OFF, // May be wrong if multiple <script> blocks are present
       },
     },
 
@@ -603,14 +607,6 @@ module.exports = {
         ...Object.fromEntries(
           typeCheckedRulesArray.map((ruleName) => [`disable-autofix/${ruleName}`, OFF]),
         ),
-      },
-    },
-
-    ENV.vue && {
-      files: ['*.vue'],
-      rules: {
-        '@typescript-eslint/prefer-function-type': OFF,
-        '@typescript-eslint/unified-signatures': OFF,
       },
     },
 
