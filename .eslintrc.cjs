@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/no-useless-spread, no-unused-vars, @typescript-eslint/no-unused-vars, import/no-unresolved */
+/* eslint-disable unicorn/no-useless-spread, no-unused-vars, @typescript-eslint/no-unused-vars, import/no-unresolved, no-dupe-keys */
 
 /** ********
  * AUXILIARY
@@ -42,6 +42,8 @@ ENV.nuxt3 = ENV.nuxt3 && ENV.vue;
 
 const OPTIONS = {
   errorsInsteadOfWarnings: __FALSE__,
+  realProblemsOnly: true,
+  nuxtOrVueProjectDir: '',
 };
 
 const NODE = {
@@ -65,14 +67,10 @@ const VUE = {
   // but imports of user-defined identifiers are not from `#imports` and `#components`
   nuxtDisableImportNoCycleRule: __FALSE__,
   enforceTypescriptInScript: ENV.typescript,
-
-  pathsToPagesOrOtherDirectoriesWithSingleWordComponentNames: arrayFlattenAndFilterOutFalsyValues([
-    'pages/**/*.vue',
-    ENV.nuxt3 && 'layouts/**/*.vue',
-  ]),
   noUndefComponentsIgnorePatterns: arrayFlattenAndFilterOutFalsyValues([
     ENV.nuxt3 && [/^(lazy-)?nuxt-/, /^(lazy-)?client-only$/],
   ]),
+  noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles: __FALSE__,
 };
 
 const MISC = {
@@ -102,6 +100,7 @@ const OVERRIDES = [
 const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   '@typescript-eslint/ban-types': [ERROR, {types: {object: false, '{}': false}}],
   '@typescript-eslint/consistent-type-imports': [ERROR, {fixStyle: 'inline-type-imports'}],
+  '@typescript-eslint/method-signature-style': ERROR,
   '@typescript-eslint/no-import-type-side-effects': ERROR,
   '@typescript-eslint/no-dynamic-delete': WARNING,
   '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
@@ -133,6 +132,34 @@ const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   ],
   'no-use-before-define': OFF,
   '@typescript-eslint/no-use-before-define': [ERROR, {ignoreTypeReferences: false}],
+
+  ...(OPTIONS.realProblemsOnly && {
+    '@typescript-eslint/no-non-null-assertion': OFF,
+    '@typescript-eslint/no-shadow': OFF,
+    '@typescript-eslint/consistent-type-definitions': OFF,
+    '@typescript-eslint/no-empty-function': OFF,
+    '@typescript-eslint/no-import-type-side-effects': OFF,
+    '@typescript-eslint/no-use-before-define': WARNING,
+    '@typescript-eslint/array-type': OFF,
+    '@typescript-eslint/default-param-last': OFF,
+    '@typescript-eslint/consistent-type-imports': OFF,
+    '@typescript-eslint/consistent-generic-constructors': OFF,
+    '@typescript-eslint/unbound-method': WARNING,
+    '@typescript-eslint/method-signature-style': WARNING,
+    '@typescript-eslint/no-namespace': OFF,
+    '@typescript-eslint/dot-notation': WARNING,
+    '@typescript-eslint/no-throw-literal': OFF,
+    '@typescript-eslint/no-var-requires': OFF,
+    '@typescript-eslint/prefer-function-type': OFF,
+    '@typescript-eslint/ban-ts-comment': WARNING,
+    '@typescript-eslint/no-unsafe-enum-comparison': WARNING,
+    '@typescript-eslint/prefer-ts-expect-error': WARNING,
+    '@typescript-eslint/no-loop-func': WARNING,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 const TS_ESLINT_RULES_TYPE_CHECKED = {
@@ -162,6 +189,31 @@ const TS_ESLINT_RULES_TYPE_CHECKED = {
 
   'no-return-await': OFF,
   '@typescript-eslint/return-await': [ERROR, 'always'],
+
+  ...(OPTIONS.realProblemsOnly && {
+    '@typescript-eslint/no-floating-promises': OFF,
+    '@typescript-eslint/no-unnecessary-condition': OFF,
+    'disable-autofix/@typescript-eslint/no-unnecessary-condition': OFF,
+    '@typescript-eslint/no-unsafe-argument': OFF,
+    '@typescript-eslint/no-unsafe-assignment': OFF,
+    '@typescript-eslint/no-unsafe-call': OFF,
+    '@typescript-eslint/no-unsafe-member-access': OFF,
+    '@typescript-eslint/no-unsafe-return': OFF,
+    '@typescript-eslint/restrict-template-expressions': WARNING,
+    '@typescript-eslint/no-misused-promises': WARNING,
+    '@typescript-eslint/return-await': OFF,
+    '@typescript-eslint/no-confusing-void-expression': WARNING,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 const IMPORT_RULES = {
@@ -200,6 +252,25 @@ const IMPORT_RULES = {
       alphabetize: {order: 'asc'},
     },
   ],
+
+  ...(OPTIONS.realProblemsOnly && {
+    'import/order': OFF,
+    'import/extensions': OFF,
+    'import/no-unresolved': OFF,
+    'import/no-useless-path-segments': OFF,
+    'import/no-relative-packages': OFF,
+    'import/no-default-export': OFF,
+    'import/no-cycle': OFF,
+    'import/no-extraneous-dependencies': OFF,
+    'import/newline-after-import': WARNING,
+    'import/no-dynamic-require': WARNING,
+    'import/first': WARNING,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 // TODO check more "Uncategorized" rules
@@ -217,16 +288,18 @@ const VUE_RULES = {
     'kebab-case',
     {
       registeredComponentsOnly: false,
-      ignores: arrayFlattenAndFilterOutFalsyValues([
-        ENV.nuxt3 && ['Title', 'Base', 'Style', 'Meta', 'Link', 'Body', 'Html', 'Head'],
-      ]),
+      ignores: arrayFlattenAndFilterOutFalsyValues(['/^[A-Z][a-z]+$/']),
     },
   ],
   'vue/define-emits-declaration': ERROR,
   'vue/define-props-declaration': [ERROR, 'runtime'],
-  'vue/define-macros-order': [ERROR, {
-    ...(VUE['>=vue3.4'] && {defineExposeLast: true})
-  }],
+  'vue/define-macros-order': [
+    ERROR,
+    {
+      order: ['defineOptions', 'defineModel', 'defineProps', 'defineEmits', 'defineSlots'],
+      ...(VUE['>=vue3.4'] && {defineExposeLast: true}),
+    },
+  ],
   'vue/html-button-has-type': ERROR,
   'vue/html-self-closing': [
     ERROR,
@@ -264,6 +337,25 @@ const VUE_RULES = {
   'vue/require-typed-ref': ERROR,
   'vue/v-for-delimiter-style': ERROR,
   'vue/v-on-handler-style': [ERROR, 'inline'],
+
+  ...(OPTIONS.realProblemsOnly && {
+    'vue/require-explicit-slots': OFF,
+    'vue/define-props-declaration': OFF,
+    'vue/block-order': OFF,
+    'vue/component-name-in-template-casing': OFF,
+    'vue/html-self-closing': OFF,
+    'vue/define-macros-order': OFF,
+    'vue/v-on-handler-style': OFF,
+    'vue/no-undef-components': OFF, // TODO WARNING
+    'vue/html-button-has-type': WARNING, // TODO do not disable?
+    'vue/require-typed-ref': WARNING, // TODO OFF ?
+    'vue/prefer-true-attribute-shorthand': OFF,
+    'vue/multi-word-component-names': OFF,
+    'vue/no-dupe-keys': WARNING,
+    'vue/v-on-event-hyphenation': OFF,
+    'vue/define-emits-declaration': OFF,
+    '': OFF,
+  }),
 };
 
 const VUE_3_3_RULES = {
@@ -285,7 +377,9 @@ const VUE_A11Y_RULES = {
 
 const VUE_EXTENSION_RULES = {
   'vue/camelcase': [ERROR, {properties: 'never'}],
-  'vue/dot-notation': ERROR,
+  ...(!VUE.noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles && {
+    'vue/dot-notation': ERROR,
+  }),
   'vue/eqeqeq': [ERROR, 'always', {null: 'ignore'}],
   'vue/no-console': ERROR,
   'vue/no-constant-condition': WARNING,
@@ -317,6 +411,16 @@ const SONARJS_RULES = {
   'sonarjs/no-nested-switch': OFF,
   'sonarjs/no-nested-template-literals': OFF,
   'sonarjs/prefer-immediate-return': OFF,
+
+  ...(OPTIONS.realProblemsOnly && {
+    'sonarjs/no-identical-functions': WARNING,
+    'sonarjs/no-collapsible-if': WARNING,
+    'sonarjs/no-small-switch': WARNING,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 const UNICORN_RULES = {
@@ -351,17 +455,51 @@ const UNICORN_RULES = {
   // ⚠️ May conflict with `array-callback-return` if `allowImplicit` option is NOT set to `true`
   'unicorn/no-useless-undefined': OFF,
   'disable-autofix/unicorn/no-useless-undefined': [ERROR, {checkArguments: false}],
+
+  ...(OPTIONS.realProblemsOnly && {
+    'unicorn/prefer-spread': OFF,
+    'disable-autofix/unicorn/prefer-spread': OFF,
+    'unicorn/prefer-ternary': OFF,
+    'unicorn/text-encoding-identifier-case': OFF,
+    'unicorn/prefer-string-slice': OFF,
+    'unicorn/no-negated-condition': OFF,
+    'unicorn/prefer-add-event-listener': OFF,
+    'unicorn/explicit-length-check': OFF,
+    'disable-autofix/unicorn/explicit-length-check': OFF,
+    'unicorn/no-useless-undefined': OFF,
+    'disable-autofix/unicorn/no-useless-undefined': OFF,
+    'unicorn/prefer-string-replace-all': OFF,
+    'unicorn/prefer-switch': OFF,
+    'unicorn/switch-case-braces': OFF,
+    'unicorn/prefer-keyboard-event-key': OFF,
+    'unicorn/no-object-as-default-parameter': OFF,
+    'unicorn/prefer-array-flat-map': WARNING,
+    'unicorn/prefer-node-protocol': WARNING,
+    'unicorn/consistent-function-scoping': WARNING,
+    'unicorn/no-lonely-if': WARNING,
+    'unicorn/prefer-at': OFF,
+    'unicorn/prefer-code-point': OFF,
+    'unicorn/no-zero-fractions': OFF,
+    'unicorn/prefer-top-level-await': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 const PROMISE_RULES = {
   'promise/always-return': [ERROR, {ignoreLastCallback: true}],
   'promise/catch-or-return': [
-    ERROR,
+    OPTIONS.realProblemsOnly ? WARNING : ERROR,
     {
       allowThen: true,
       allowFinally: true,
     },
   ],
+
+  ...(OPTIONS.realProblemsOnly && {
+    '': OFF,
+  }),
 };
 
 const VANILLA_ESLINT_RULES = {
@@ -370,6 +508,7 @@ const VANILLA_ESLINT_RULES = {
   'func-names': OFF,
   'lines-between-class-members': OFF,
   'max-classes-per-file': OFF,
+  'no-alert': ERROR,
   'no-await-in-loop': WARNING,
   'no-bitwise': OFF,
   'no-continue': OFF,
@@ -381,7 +520,12 @@ const VANILLA_ESLINT_RULES = {
   'no-plusplus': OFF,
   // ⚠️ If semicolons DISABLED:
   // 'no-plusplus': [ERROR, {allowForLoopAfterthoughts: true}],
-  'no-restricted-syntax': [ERROR, 'ForInStatement', 'LabeledStatement', 'WithStatement'],
+  'no-restricted-syntax': [
+    OPTIONS.realProblemsOnly ? WARNING : ERROR,
+    'ForInStatement',
+    'LabeledStatement',
+    'WithStatement',
+  ],
   'no-return-await': OFF,
   'no-underscore-dangle': OFF,
   ...(!ENV.typescript && {
@@ -395,7 +539,7 @@ const VANILLA_ESLINT_RULES = {
     ],
   }),
   'no-useless-constructor': ERROR,
-  'no-void': [ERROR, {allowAsStatement: true}],
+  'no-void': [OPTIONS.realProblemsOnly ? WARNING : ERROR, {allowAsStatement: true}],
   'prefer-const': [ERROR, {destructuring: 'all'}],
   'prefer-destructuring': [
     ERROR,
@@ -417,6 +561,47 @@ const VANILLA_ESLINT_RULES = {
   'global-require': OFF,
 
   // TODO `quotes`
+
+  ...(OPTIONS.realProblemsOnly && {
+    'no-inner-declarations': OFF,
+    'no-shadow': OFF,
+    'no-empty-function': OFF,
+    'no-return-assign': OFF,
+    'no-else-return': WARNING,
+    'consistent-return': WARNING,
+    'no-constructor-return': OFF,
+    'no-use-before-define': WARNING,
+    'prefer-destructuring': OFF,
+    'no-implicit-coercion': OFF,
+    'no-param-reassign': OFF,
+    'symbol-description': OFF,
+    'default-param-last': OFF,
+    'no-promise-executor-return': OFF,
+    'sort-imports': OFF,
+    'guard-for-in': WARNING,
+    camelcase: OFF,
+    'prefer-template': WARNING,
+    'no-lonely-if': WARNING,
+    'object-shorthand': WARNING,
+    'array-callback-return': [WARNING, {allowImplicit: true}],
+    'no-loop-func': WARNING,
+    strict: OFF,
+    'prefer-object-spread': WARNING,
+    'one-var': OFF,
+    'no-cond-assign': WARNING,
+    'no-multi-assign': WARNING,
+    'default-case': WARNING,
+    'object-shorthand': OFF,
+    'no-constant-condition': OFF,
+    'no-cond-assign': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+    '': OFF,
+  }),
 };
 
 const parser = ENV.typescript ? '@typescript-eslint/parser' : '@babel/eslint-parser';
@@ -617,15 +802,27 @@ module.exports = {
         '@typescript-eslint/no-use-before-define': OFF,
         '@typescript-eslint/no-unused-vars': OFF,
         '@typescript-eslint/no-shadow': OFF,
+        '@typescript-eslint/method-signature-style': OFF,
+        'vars-on-top': OFF,
 
         ...(ENV.import && {'import/no-default-export': OFF, 'import/newline-after-import': OFF}),
       },
     },
 
     ENV.vue && {
-      files: [...VUE.pathsToPagesOrOtherDirectoriesWithSingleWordComponentNames],
+      files: [
+        `${OPTIONS.nuxtOrVueProjectDir}pages/**/*.vue`,
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`,
+      ],
       rules: {
         'vue/multi-word-component-names': OFF,
+      },
+    },
+
+    ENV.vue && {
+      files: [ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`],
+      rules: {
+        'vue/require-explicit-slots': OFF,
       },
     },
 
@@ -640,7 +837,12 @@ module.exports = {
     },
 
     ENV.vue && {
-      files: arrayFlattenAndFilterOutFalsyValues(['*.vue', '*.tsx', ENV.nuxt3 && 'plugins/*.ts']),
+      files: arrayFlattenAndFilterOutFalsyValues([
+        '*.vue',
+        '*.tsx',
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}plugins/*.ts`,
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}server/**/*.ts`,
+      ]),
       rules: {
         'import/no-default-export': OFF,
       },
