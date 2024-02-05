@@ -42,6 +42,7 @@ ENV.nuxt3 = ENV.nuxt3 && ENV.vue;
 
 const OPTIONS = {
   errorsInsteadOfWarnings: __FALSE__,
+  nuxtOrVueProjectDir: '',
 };
 
 const NODE = {
@@ -65,14 +66,10 @@ const VUE = {
   // but imports of user-defined identifiers are not from `#imports` and `#components`
   nuxtDisableImportNoCycleRule: __FALSE__,
   enforceTypescriptInScript: ENV.typescript,
-
-  pathsToPagesOrOtherDirectoriesWithSingleWordComponentNames: arrayFlattenAndFilterOutFalsyValues([
-    'pages/**/*.vue',
-    ENV.nuxt3 && 'layouts/**/*.vue',
-  ]),
   noUndefComponentsIgnorePatterns: arrayFlattenAndFilterOutFalsyValues([
     ENV.nuxt3 && [/^(lazy-)?nuxt-/, /^(lazy-)?client-only$/],
   ]),
+  noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles: __FALSE__,
 };
 
 const MISC = {
@@ -102,6 +99,7 @@ const OVERRIDES = [
 const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   '@typescript-eslint/ban-types': [ERROR, {types: {object: false, '{}': false}}],
   '@typescript-eslint/consistent-type-imports': [ERROR, {fixStyle: 'inline-type-imports'}],
+  '@typescript-eslint/method-signature-style': ERROR,
   '@typescript-eslint/no-import-type-side-effects': ERROR,
   '@typescript-eslint/no-dynamic-delete': WARNING,
   '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
@@ -217,16 +215,18 @@ const VUE_RULES = {
     'kebab-case',
     {
       registeredComponentsOnly: false,
-      ignores: arrayFlattenAndFilterOutFalsyValues([
-        ENV.nuxt3 && ['Title', 'Base', 'Style', 'Meta', 'Link', 'Body', 'Html', 'Head'],
-      ]),
+      ignores: arrayFlattenAndFilterOutFalsyValues(['/^[A-Z][a-z]+$/']),
     },
   ],
   'vue/define-emits-declaration': ERROR,
   'vue/define-props-declaration': [ERROR, 'runtime'],
-  'vue/define-macros-order': [ERROR, {
-    ...(VUE['>=vue3.4'] && {defineExposeLast: true})
-  }],
+  'vue/define-macros-order': [
+    ERROR,
+    {
+      order: ['defineOptions', 'defineModel', 'defineProps', 'defineEmits', 'defineSlots'],
+      ...(VUE['>=vue3.4'] && {defineExposeLast: true}),
+    },
+  ],
   'vue/html-button-has-type': ERROR,
   'vue/html-self-closing': [
     ERROR,
@@ -285,7 +285,9 @@ const VUE_A11Y_RULES = {
 
 const VUE_EXTENSION_RULES = {
   'vue/camelcase': [ERROR, {properties: 'never'}],
-  'vue/dot-notation': ERROR,
+  ...(!VUE.noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles && {
+    'vue/dot-notation': ERROR,
+  }),
   'vue/eqeqeq': [ERROR, 'always', {null: 'ignore'}],
   'vue/no-console': ERROR,
   'vue/no-constant-condition': WARNING,
@@ -617,15 +619,26 @@ module.exports = {
         '@typescript-eslint/no-use-before-define': OFF,
         '@typescript-eslint/no-unused-vars': OFF,
         '@typescript-eslint/no-shadow': OFF,
+        '@typescript-eslint/method-signature-style': OFF,
 
         ...(ENV.import && {'import/no-default-export': OFF, 'import/newline-after-import': OFF}),
       },
     },
 
     ENV.vue && {
-      files: [...VUE.pathsToPagesOrOtherDirectoriesWithSingleWordComponentNames],
+      files: [
+        `${OPTIONS.nuxtOrVueProjectDir}pages/**/*.vue`,
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`,
+      ],
       rules: {
         'vue/multi-word-component-names': OFF,
+      },
+    },
+
+    ENV.vue && {
+      files: [ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`],
+      rules: {
+        'vue/require-explicit-slots': OFF,
       },
     },
 
@@ -640,7 +653,12 @@ module.exports = {
     },
 
     ENV.vue && {
-      files: arrayFlattenAndFilterOutFalsyValues(['*.vue', '*.tsx', ENV.nuxt3 && 'plugins/*.ts']),
+      files: arrayFlattenAndFilterOutFalsyValues([
+        '*.vue',
+        '*.tsx',
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}plugins/*.ts`,
+        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}server/**/*.ts`,
+      ]),
       rules: {
         'import/no-default-export': OFF,
       },
