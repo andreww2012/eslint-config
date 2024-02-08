@@ -21,11 +21,12 @@ const arrayFlattenAndFilterOutFalsyValues = (arr) => arr.flat().filter(Boolean);
  ********* */
 
 // ⚠️ Define environment: https://eslint.org/docs/latest/use/configure/language-options#specifying-environments
+// WARNING: due to this https://github.com/eslint/eslint/issues/17679, you need to set `ecmaVersion` separately (below in `OPTIONS`)
 const ESLINT_ENV = {
-  es6: true,
+  es2023: true,
   commonjs: true,
   browser: true,
-  node: true,
+  node: __FALSE__,
   // webextensions: true,
   // jest: true,
   // worker: true,
@@ -41,6 +42,9 @@ const ENV = {
 ENV.nuxt3 = ENV.nuxt3 && ENV.vue;
 
 const OPTIONS = {
+  ecmaVersion: 'latest',
+  customParser: undefined, // For example, `@babel/eslint-parser`
+  parserOptions: {},
   errorsInsteadOfWarnings: __FALSE__,
   nuxtOrVueProjectDir: '',
 };
@@ -417,11 +421,12 @@ const VANILLA_ESLINT_RULES = {
 
   // Deprecated:
   'global-require': OFF,
+  'spaced-comment': OFF,
 
   // TODO `quotes`
 };
 
-const parser = ENV.typescript ? '@typescript-eslint/parser' : '@babel/eslint-parser';
+const parser = OPTIONS.customParser || ENV.typescript ? '@typescript-eslint/parser' : undefined;
 
 /** *************************
  * START OF THE ESLINT CONFIG
@@ -433,20 +438,17 @@ module.exports = {
 
   env: ESLINT_ENV,
 
-  ...(ENV.vue || (ENV.typescript && TYPESCRIPT.typeCheckedRules)
-    ? {
-        parserOptions: {
-          parser,
-          project: ENV.typescript && TYPESCRIPT.typeCheckedRules && TYPESCRIPT.project,
-          ecmaVersion: 'latest',
-          sourceType: 'module',
-          ecmaFeatures: {
-            jsx: true,
-          },
-          extraFileExtensions: arrayFlattenAndFilterOutFalsyValues([ENV.vue && '.vue']),
-        },
-      }
-    : {parser}),
+  parserOptions: {
+    parser,
+    project: ENV.typescript && TYPESCRIPT.typeCheckedRules && TYPESCRIPT.project,
+    ecmaVersion,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+    extraFileExtensions: arrayFlattenAndFilterOutFalsyValues([ENV.vue && '.vue']),
+    ...OPTIONS.parserOptions,
+  },
 
   plugins: arrayFlattenAndFilterOutFalsyValues([
     // 🌐 https://github.com/chiefmikey/eslint-plugin-disable-autofix
@@ -479,12 +481,14 @@ module.exports = {
     // 🌐 https://www.npmjs.com/package/eslint-import-resolver-typescript
     ENV.import && ENV.typescript && 'plugin:import/typescript',
 
-    ...(ENV.typescript && TYPESCRIPT.typeCheckedRules
-      ? [
-          'plugin:@typescript-eslint/strict-type-checked',
-          'plugin:@typescript-eslint/stylistic-type-checked',
-        ]
-      : ['plugin:@typescript-eslint/strict', 'plugin:@typescript-eslint/stylistic']),
+    ...(ENV.typescript
+      ? TYPESCRIPT.typeCheckedRules
+        ? [
+            'plugin:@typescript-eslint/strict-type-checked',
+            'plugin:@typescript-eslint/stylistic-type-checked',
+          ]
+        : ['plugin:@typescript-eslint/strict', 'plugin:@typescript-eslint/stylistic']
+      : []),
 
     // 🌐 https://github.com/eslint-community/eslint-plugin-promise
     'plugin:promise/recommended',
