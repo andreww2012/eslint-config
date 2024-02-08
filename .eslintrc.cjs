@@ -4,12 +4,19 @@
  * AUXILIARY
  *********** */
 
-let typeCheckedRulesArray = [];
-try {
-  typeCheckedRulesArray = Object.keys(
-    require('@typescript-eslint/eslint-plugin').configs['disable-type-checked'].rules,
-  );
-} catch {}
+const safeRequire = (moduleId) => {
+  try {
+    // eslint-disable-next-line security/detect-non-literal-require, import/no-dynamic-require
+    return require(moduleId);
+  } catch (error) {
+    if (error?.code === 'MODULE_NOT_FOUND') {
+      return null;
+    }
+    throw error;
+  }
+};
+
+safeRequire('dotenv')?.config();
 
 const __FALSE__ = false;
 const POSSIBLE_JS_TS_EXTENSIONS = ['js', 'cjs', 'mjs', 'ts', 'cts', 'mts'];
@@ -54,7 +61,7 @@ const NODE = {
 };
 
 const TYPESCRIPT = {
-  typeCheckedRules: true,
+  typeCheckedRules: process.env.ESLINT_CONFIG_DISABLE_TYPE_CHECKED_RULES ? false : true,
   disallowTypeAssertions: __FALSE__,
   project: arrayFlattenAndFilterOutFalsyValues(['./**/tsconfig*.json']),
 };
@@ -110,9 +117,6 @@ const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   '@typescript-eslint/no-explicit-any': [WARNING, {ignoreRestArgs: true}],
   '@typescript-eslint/prefer-literal-enum-member': [ERROR, {allowBitwiseExpressions: true}],
 
-  // Conflicting with corresponding base rules
-  'no-useless-constructor': OFF,
-
   // Extension Rules
   'default-param-last': OFF,
   '@typescript-eslint/default-param-last': ERROR,
@@ -135,6 +139,10 @@ const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   ],
   'no-use-before-define': OFF,
   '@typescript-eslint/no-use-before-define': [ERROR, {ignoreTypeReferences: false}],
+
+  // Conflicting with corresponding base rules
+  'no-useless-constructor': OFF,
+  'dot-notation': OFF,
 };
 
 const TS_ESLINT_RULES_TYPE_CHECKED = {
@@ -422,8 +430,8 @@ const VANILLA_ESLINT_RULES = {
   // Deprecated:
   'global-require': OFF,
   'spaced-comment': OFF,
-
-  // TODO `quotes`
+  'lines-around-directive': OFF,
+  quotes: OFF,
 };
 
 const parser = OPTIONS.customParser || ENV.typescript ? '@typescript-eslint/parser' : undefined;
@@ -441,7 +449,7 @@ module.exports = {
   parserOptions: {
     parser,
     project: ENV.typescript && TYPESCRIPT.typeCheckedRules && TYPESCRIPT.project,
-    ecmaVersion,
+    ecmaVersion: OPTIONS.ecmaVersion,
     sourceType: 'module',
     ecmaFeatures: {
       jsx: true,
@@ -591,6 +599,7 @@ module.exports = {
         VUE.enforceTypescriptInScript && '*.vue',
       ]),
       rules: {
+        'no-undef': OFF,
         ...(ENV.import && {
           // "We recommend you do not use the following rules, as TypeScript provides the same checks as part of standard type checking" - https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
           'import/named': OFF,
@@ -611,7 +620,10 @@ module.exports = {
 
         // Type checked rules can fail on non-typescript files, but their "disable-autofix" equivalents must be disabled too
         ...Object.fromEntries(
-          typeCheckedRulesArray.map((ruleName) => [`disable-autofix/${ruleName}`, OFF]),
+          Object.keys(
+            safeRequire('@typescript-eslint/eslint-plugin')?.configs['disable-type-checked']
+              .rules || {},
+          ).map((ruleName) => [`disable-autofix/${ruleName}`, OFF]),
         ),
       },
     },
