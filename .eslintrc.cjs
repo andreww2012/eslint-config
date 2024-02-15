@@ -116,6 +116,7 @@ const TS_ESLINT_RULES_NOT_TYPE_CHECKED = {
   '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
   '@typescript-eslint/no-explicit-any': [WARNING, {ignoreRestArgs: true}],
   '@typescript-eslint/prefer-literal-enum-member': [ERROR, {allowBitwiseExpressions: true}],
+  '@typescript-eslint/no-unused-vars': [ERROR, {ignoreRestSiblings: true}],
 
   // Extension Rules
   'default-param-last': OFF,
@@ -151,6 +152,7 @@ const TS_ESLINT_RULES_TYPE_CHECKED = {
   '@typescript-eslint/no-unsafe-argument': WARNING,
   '@typescript-eslint/no-unsafe-assignment': WARNING,
   '@typescript-eslint/no-unsafe-call': WARNING,
+  '@typescript-eslint/no-unsafe-enum-comparison': WARNING,
   '@typescript-eslint/no-unsafe-member-access': WARNING,
   '@typescript-eslint/no-unsafe-return': WARNING,
   '@typescript-eslint/prefer-nullish-coalescing': OFF,
@@ -163,7 +165,10 @@ const TS_ESLINT_RULES_TYPE_CHECKED = {
   // Disable auto-fix
 
   '@typescript-eslint/no-unnecessary-condition': OFF,
-  'disable-autofix/@typescript-eslint/no-unnecessary-condition': ERROR,
+  'disable-autofix/@typescript-eslint/no-unnecessary-condition': [
+    ERROR,
+    {allowConstantLoopConditions: true},
+  ],
   // Could remove type aliases
   '@typescript-eslint/no-unnecessary-type-arguments': OFF,
   'disable-autofix/@typescript-eslint/no-unnecessary-type-arguments': ERROR,
@@ -271,7 +276,7 @@ const VUE_RULES = {
   'vue/prefer-true-attribute-shorthand': ERROR,
   'vue/require-default-prop': OFF,
   'vue/require-explicit-emits': OFF,
-  'vue/require-explicit-slots': ERROR,
+  ...(!VUE.vue2 && {'vue/require-explicit-slots': ERROR}),
   'vue/require-typed-object-prop': ERROR,
   'vue/require-typed-ref': ERROR,
   'vue/v-for-delimiter-style': ERROR,
@@ -631,6 +636,7 @@ module.exports = {
     ENV.typescript && {
       files: ['*.d.ts'],
       rules: {
+        '@typescript-eslint/consistent-indexed-object-style': OFF,
         '@typescript-eslint/no-explicit-any': OFF,
         '@typescript-eslint/no-use-before-define': OFF,
         '@typescript-eslint/no-unused-vars': OFF,
@@ -642,17 +648,18 @@ module.exports = {
     },
 
     ENV.vue && {
-      files: [
+      files: arrayFlattenAndFilterOutFalsyValues([
         `${OPTIONS.nuxtOrVueProjectDir}pages/**/*.vue`,
+        `${OPTIONS.nuxtOrVueProjectDir}views/**/*.vue`,
         ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`,
-      ],
+      ]),
       rules: {
         'vue/multi-word-component-names': OFF,
       },
     },
 
-    ENV.vue && {
-      files: [ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`],
+    ENV.nuxt3 && {
+      files: [`${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`],
       rules: {
         'vue/require-explicit-slots': OFF,
       },
