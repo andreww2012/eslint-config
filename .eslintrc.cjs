@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/no-useless-spread, no-unused-vars, @typescript-eslint/no-unused-vars, import/no-unresolved */
+/* eslint-disable unicorn/no-useless-spread, no-unused-vars, @typescript-eslint/no-unused-vars, import/no-unresolved, no-unneeded-ternary */
 
 /** ********
  * AUXILIARY
