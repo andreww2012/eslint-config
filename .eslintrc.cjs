@@ -652,7 +652,7 @@ module.exports = {
       files: arrayFlattenAndFilterOutFalsyValues([
         `${OPTIONS.nuxtOrVueProjectDir}pages/**/*.vue`,
         `${OPTIONS.nuxtOrVueProjectDir}views/**/*.vue`,
-        ENV.nuxt3 && `${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`,
+        ENV.nuxt3 && [`${OPTIONS.nuxtOrVueProjectDir}layouts/**/*.vue`, 'app.vue', 'error.vue'],
       ]),
       rules: {
         'vue/multi-word-component-names': OFF,
