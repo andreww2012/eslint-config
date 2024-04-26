@@ -389,6 +389,7 @@ const VANILLA_ESLINT_RULES = {
   'func-names': OFF,
   'lines-between-class-members': OFF,
   'max-classes-per-file': OFF,
+  'new-cap': [ERROR, {properties: false, capIsNew: false}],
   'no-await-in-loop': WARNING,
   'no-bitwise': OFF,
   'no-continue': OFF,
