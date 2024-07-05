@@ -18,7 +18,6 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "forceConsistentCasingInFileNames": true,
-    "types": [],
 
     /* Strictness */
     "strict": true,

@@ -1,4 +1,6 @@
 {
+  "eslint.runtime": "node",
+
   "[javascript][typescript][typescriptreact][vue][css][scss][postcss][html]": {
     // Note: do NOT set `editor.formatOnSaveMode` to any value with `modifications` -
     // may incorrectly run prettier with `prettier-disabled` directives
