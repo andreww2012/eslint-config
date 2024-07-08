@@ -218,16 +218,17 @@ export const jsEslintConfig = (
     'no-throw-literal': ERROR,
     'no-undef-init': ERROR,
     // 'no-undefined': OFF,
-    'no-underscore-dangle': [
-      ERROR,
-      {
-        allow: ['__dirname', '__filename'],
-        allowAfterThis: true,
-        allowAfterSuper: true,
-        // @ts-expect-error does not exist in typings
-        allowAfterThisConstructor: true,
-      },
-    ],
+    // Had a potential, but unfortunately reports accesses of object properties starting with _
+    // 'no-underscore-dangle': [
+    //   OFF,
+    //   {
+    //     allow: ['__dirname', '__filename'],
+    //     allowAfterThis: true,
+    //     allowAfterSuper: true,
+    //     // @ts-expect-error does not exist in typings
+    //     allowAfterThisConstructor: true,
+    //   },
+    // ],
     'no-unneeded-ternary': [ERROR, {defaultAssignment: false}],
     'no-unused-expressions': [ERROR, RULE_NO_UNUSED_EXPRESSIONS_OPTIONS],
     'no-useless-call': ERROR,

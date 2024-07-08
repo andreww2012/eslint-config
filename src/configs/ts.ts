@@ -153,16 +153,7 @@ export const tsEslintConfig = (
     ],
     ...overrideBaseRule('default-param-last', ERROR),
     // '@typescript-eslint/explicit-function-return-type': OFF,
-    '@typescript-eslint/explicit-member-accessibility': [
-      ERROR,
-      {
-        accessibility: 'explicit',
-        overrides: {
-          constructors: 'no-public',
-          properties: 'off',
-        },
-      },
-    ],
+    // '@typescript-eslint/explicit-member-accessibility': OFF,
     '@typescript-eslint/explicit-module-boundary-types': OFF,
     // ...overrideBaseRule('init-declarations', OFF),
     // ...overrideBaseRule('max-params', OFF),
@@ -306,6 +297,7 @@ export const tsEslintConfig = (
           // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
           '@typescript-eslint': pluginTs as any,
         },
+        name: genFlatConfigEntryName('ts/setup'),
       },
 
       {
@@ -347,6 +339,9 @@ export const tsEslintConfig = (
           // "TypeScript must be configured with allowUnreachableCode: false for it to consider unreachable code an error." - https://eslint.org/docs/latest/rules/no-unreachable#handled_by_typescript
           // 'no-unreachable': OFF,
           'no-unsafe-negation': OFF,
+
+          // Does not work correctly when type-only imports are present because you can't combine such an import with a default import.
+          'no-duplicate-imports': OFF,
         },
         name: genFlatConfigEntryName('ts/disable-handled-by-ts-compiler-rules'),
       },

@@ -2,7 +2,7 @@ import {toArray} from '@antfu/utils';
 // @ts-expect-error no typings
 import pluginVue from 'eslint-plugin-vue';
 import pluginVueA11y from 'eslint-plugin-vuejs-accessibility';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import globals from 'globals';
 import parserVue from 'vue-eslint-parser';
 import {ERROR, GLOB_VUE, OFF} from '../constants';
 import type {
@@ -86,6 +86,14 @@ export const vueEslintConfig = (
   const isLess2_5 = isVue2 && vueMajorAndMinorVersion < 2.5;
   const isLess2_6 = isVue2 && vueMajorAndMinorVersion < 2.6;
   const isLess3_1 = vueMajorAndMinorVersion < 3.1;
+
+  const recommendedRules = // TODO report to Prettier?
+    // prettier-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    (pluginVue.configs[isVue3 ? 'flat/recommended' : 'flat/vue2-recommended'] as FlatConfigEntry[]).find(
+      (entry) =>
+        entry.name === 'vue:recommended:rules' || entry.name === 'vue:vue2-recommended:rules',
+    )?.rules;
 
   // LEGEND:
   // 3️⃣ = Only in Vue 3 recommended
@@ -437,10 +445,21 @@ export const vueEslintConfig = (
   return (
     [
       {
+        plugins: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          vue: pluginVue,
+        },
+        name: genFlatConfigEntryName('vue/setup'),
+      },
+
+      {
         files,
         ...(options.ignores && {ignores: options.ignores}),
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        processor: pluginVue.processors['.vue'],
         languageOptions: {
+          globals: globals.browser,
           parser: parserVue,
           parserOptions: {
             ecmaFeatures: {
@@ -453,9 +472,7 @@ export const vueEslintConfig = (
         },
 
         rules: {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          ...(pluginVue.configs[isVue3 ? 'vue3-recommended' : 'vue2-recommended']
-            .rules as FlatConfigEntry['rules']),
+          ...recommendedRules,
           ...rules,
           ...options.overrides,
         },

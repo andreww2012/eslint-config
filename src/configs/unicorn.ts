@@ -32,7 +32,7 @@ export const unicornEslintConfig = (
     // 'unicorn/import-style': ERROR,
     // 'unicorn/new-for-builtins': ERROR,
     // 'unicorn/no-abusive-eslint-disable': ERROR,
-    // 'unicorn/no-anonymous-default-export': ERROR,
+    'unicorn/no-anonymous-default-export': OFF, // Note: there's the same rule in import plugin
     'unicorn/no-array-callback-reference': OFF,
     'unicorn/no-array-for-each': OFF,
     // 'unicorn/no-array-method-this-argument': ERROR,

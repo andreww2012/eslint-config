@@ -28,10 +28,12 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
 
   const configsOptions = options.configs || {};
 
-  const isVueEnabled = Boolean(configsOptions.vue) || isPackageExists('vue');
+  const isVueEnabled =
+    configsOptions.vue !== false && (Boolean(configsOptions.vue) || isPackageExists('vue'));
 
   const typescriptPackageInfo = getPackageInfoSync('typescript');
-  const isTypescriptEnabled = Boolean(configsOptions.ts || typescriptPackageInfo);
+  const isTypescriptEnabled =
+    configsOptions.ts !== false && Boolean(configsOptions.ts || typescriptPackageInfo);
 
   /* 🔵 JAVASCRIPT */
 
@@ -61,6 +63,7 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
   const vueOptions: VueEslintConfigOptions = {
     enableTs: isTypescriptEnabled,
     majorVersion: vueMajorVersion,
+    fullVersion: vueFullVersion,
     nuxtMajorVersion,
     ...assignOptions(configsOptions, 'vue'),
   };
@@ -150,8 +153,8 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
       isPromiseEnabled && promiseEslintConfig(promiseOptions, internalOptions),
       isSonarEnabled && sonarEslintConfig(sonarOptions, internalOptions),
       isTailwindEnabled && tailwindEslintConfig(tailwindOptions, internalOptions),
-      isVueEnabled && vueEslintConfig(vueOptions, internalOptions),
-      tsEslintConfig(tsOptions, internalOptions), // Must come after all rulesets for vanilla JS
+      isTypescriptEnabled && tsEslintConfig(tsOptions, internalOptions), // Must come after all rulesets for vanilla JS
+      isVueEnabled && vueEslintConfig(vueOptions, internalOptions), // Must come after ts
 
       {
         files: GLOB_CONFIG_FILES,
