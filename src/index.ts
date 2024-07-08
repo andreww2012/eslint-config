@@ -1,89 +1,60 @@
 import eslintConfigPrettier from 'eslint-config-prettier';
 // @ts-expect-error no typings
 import pluginDisableAutofix from 'eslint-plugin-disable-autofix';
+// @ts-expect-error no typings
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import {getPackageInfoSync, isPackageExists} from 'local-pkg';
+import {omit} from 'lodash-es';
 import {type ImportEslintConfigOptions, importEslintConfig} from './configs/import';
-import {type JsEslintConfigOptions, jsEslintConfig} from './configs/js';
-import {type NodeEslintConfigOptions, nodeEslintConfig} from './configs/node';
-import {type PromiseEslintConfigOptions, promiseEslintConfig} from './configs/promise';
+import {jsEslintConfig} from './configs/js';
+import {nodeEslintConfig} from './configs/node';
+import {promiseEslintConfig} from './configs/promise';
 import {sonarEslintConfig} from './configs/sonar';
-import {type TailwindEslintConfigOptions, tailwindEslintConfig} from './configs/tailwind';
+import {tailwindEslintConfig} from './configs/tailwind';
 import {type TsEslintConfigOptions, tsEslintConfig} from './configs/ts';
 import {type UnicornEslintConfigOptions, unicornEslintConfig} from './configs/unicorn';
 import {type VueEslintConfigOptions, vueEslintConfig} from './configs/vue';
-import {OFF} from './constants';
-import {GLOB_CONFIG_FILES} from './globs';
-import type {FlatConfigEntry} from './types';
+import {GLOB_CONFIG_FILES, OFF} from './constants';
+import type {EslintConfigOptions, FlatConfigEntry, InternalConfigOptions} from './types';
+import {assignOptions} from './utils';
 
-// TODO option to turn warnings into errors
 // TODO debug
-interface EslintConfigOptions {
-  js?: boolean | JsEslintConfigOptions;
-  ts?: boolean | TsEslintConfigOptions;
-  /**
-   * @default true
-   */
-  unicorn?: boolean | UnicornEslintConfigOptions;
-  /**
-   * @default true
-   */
-  import?: boolean | ImportEslintConfigOptions;
-  /**
-   * @default true
-   */
-  node?: boolean | NodeEslintConfigOptions;
-  /**
-   * @default true
-   */
-  promise?: boolean | PromiseEslintConfigOptions;
-  /**
-   * @default true
-   */
-  sonar?: boolean | PromiseEslintConfigOptions;
-  /**
-   * `false` (do not enable Vue rules) <=> `vue` package is not installed (at any level) or `false` is explicitly passed
-   */
-  vue?: boolean | VueEslintConfigOptions;
-  /**
-   * `false` (do not enable Tailwind rules) <=> `tailwindcss` package is not installed (at any level) or `false` is explicitly passed
-   */
-  tailwind?: boolean | TailwindEslintConfigOptions;
-  /**
-   * Enables `eslint-config-prettier` at the end of the ruleset.
-   * @see https://github.com/prettier/eslint-config-prettier
-   * @default true
-   */
-  disablePrettierIncompatibleRules?: boolean;
-}
+// TODO: angular, react, eslint-plugin-regexp, eslint-plugin-pinia, eslint-plugin-security, eslint-plugin-vitest, eslint-plugin-deprecation, eslint-plugin-prefer-arrow-functions, eslint-plugin-html, eslint-plugin-css
+// TODO getPackageInfo async?
 
 export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry[] => {
-  const isVueEnabled = Boolean(options.vue) || isPackageExists('vue');
-  const isTypescriptEnabled = Boolean(options.ts) || isPackageExists('typescript');
+  const internalOptions: InternalConfigOptions = {globalOptions: options};
+
+  const configsOptions = options.configs || {};
+
+  const isVueEnabled = Boolean(configsOptions.vue) || isPackageExists('vue');
+
+  const typescriptPackageInfo = getPackageInfoSync('typescript');
+  const isTypescriptEnabled = Boolean(configsOptions.ts || typescriptPackageInfo);
 
   /* 🔵 JAVASCRIPT */
 
   const jsOptions: TsEslintConfigOptions = {
-    ...(typeof options.js === 'object' && options.js),
+    ...assignOptions(configsOptions, 'js'),
   };
 
   /* 🔵 TYPESCRIPT */
 
   const tsOptions: TsEslintConfigOptions = {
     extraFileExtensions: [isVueEnabled && 'vue'].filter((v) => v !== false),
-    ...(typeof options.ts === 'object' && options.ts),
+    typescriptVersion: typescriptPackageInfo?.version,
+    ...assignOptions(configsOptions, 'ts'),
   };
   tsOptions.tsconfigPath ??= './**/tsconfig*.json';
 
   /* 🔵 VUE */
 
-  // TODO async?
   const vueFullVersion = getPackageInfoSync('vue')?.version;
   const vueMajorVersionStr = vueFullVersion?.split('.')[0];
   const vueMajorVersion =
     vueMajorVersionStr === '2' ? 2 : vueMajorVersionStr === '3' ? 3 : undefined;
 
-  // TODO async?
   const nuxtMajorVersionStr = getPackageInfoSync('nuxt')?.version?.split('.')[0];
   const nuxtMajorVersion = nuxtMajorVersionStr === '3' ? 3 : undefined;
 
@@ -91,61 +62,70 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
     enableTs: isTypescriptEnabled,
     majorVersion: vueMajorVersion,
     nuxtMajorVersion,
-    ...(typeof options.vue === 'object' && options.vue),
+    ...assignOptions(configsOptions, 'vue'),
   };
 
   /* 🔵 UNICORN */
 
-  const isUnicornEnabled = Boolean(options.unicorn ?? true);
+  const isUnicornEnabled = Boolean(configsOptions.unicorn ?? true);
   const unicornOptions: UnicornEslintConfigOptions = {
-    ...(typeof options.unicorn === 'object' && options.unicorn),
+    ...assignOptions(configsOptions, 'unicorn'),
   };
 
   /* 🔵 IMPORT */
 
-  const isImportEnabled = Boolean(options.import ?? true);
+  const isImportEnabled = Boolean(configsOptions.import ?? true);
   const importOptions: ImportEslintConfigOptions = {
     ...(isTypescriptEnabled && {tsconfigPath: tsOptions.tsconfigPath}),
-    ...(typeof options.import === 'object' && options.import),
+    ...assignOptions(configsOptions, 'import'),
   };
 
   /* 🔵 NODE */
 
-  const isNodeEnabled = Boolean(options.node ?? true);
+  const isNodeEnabled = Boolean(configsOptions.node ?? true);
   const nodeOptions: ImportEslintConfigOptions = {
-    ...(typeof options.node === 'object' && options.node),
+    ...assignOptions(configsOptions, 'node'),
   };
 
   /* 🔵 PROMISE */
 
-  const isPromiseEnabled = Boolean(options.promise ?? true);
+  const isPromiseEnabled = Boolean(configsOptions.promise ?? true);
   const promiseOptions: ImportEslintConfigOptions = {
-    ...(typeof options.promise === 'object' && options.promise),
+    ...assignOptions(configsOptions, 'promise'),
   };
 
   /* 🔵 SONARJS */
 
-  const isSonarEnabled = Boolean(options.sonar ?? true);
+  const isSonarEnabled = Boolean(configsOptions.sonar ?? true);
   const sonarOptions: ImportEslintConfigOptions = {
-    ...(typeof options.sonar === 'object' && options.sonar),
+    ...assignOptions(configsOptions, 'sonar'),
   };
 
   /* 🔵 TAILWIND */
 
   const isTailwindEnabled =
-    options.tailwind === false ? false : options.tailwind ? true : isPackageExists('tailwindcss');
+    configsOptions.tailwind === false
+      ? false
+      : configsOptions.tailwind
+        ? true
+        : isPackageExists('tailwindcss');
   const tailwindOptions: ImportEslintConfigOptions = {
-    ...(typeof options.tailwind === 'object' && options.tailwind),
+    ...assignOptions(configsOptions, 'tailwind'),
   };
 
   return (
     [
+      // According to ESLint docs: "If `ignores` is used without any other keys in the configuration object, then the patterns act as global ignores <...> Patterns are added after the default patterns, which are ["**/node_modules/", ".git/"]." - https://eslint.org/docs/latest/use/configure/configuration-files#globally-ignoring-files-with-ignores
       {
-        ignores: ['**/node_modules', '**/dist'],
+        ignores: options.ignores || ['**/dist'],
       },
       {
         plugins: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           'disable-autofix': pluginDisableAutofix,
+          // Used in multiple configs and we can't define plugin multiple times
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          unicorn: eslintPluginUnicorn,
         },
         languageOptions: {
           ecmaVersion: 'latest',
@@ -163,16 +143,15 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
         } as const,
       },
 
-      jsEslintConfig(jsOptions),
-      isUnicornEnabled && unicornEslintConfig(unicornOptions),
-      isImportEnabled && importEslintConfig(importOptions),
-      isNodeEnabled && nodeEslintConfig(nodeOptions),
-      isPromiseEnabled && promiseEslintConfig(promiseOptions),
-      isSonarEnabled && sonarEslintConfig(sonarOptions),
-      isTailwindEnabled && tailwindEslintConfig(tailwindOptions),
-      // Must come after all rulesets for vanilla JS
-      tsEslintConfig(tsOptions),
-      vueEslintConfig(vueOptions),
+      jsEslintConfig(jsOptions, internalOptions),
+      isUnicornEnabled && unicornEslintConfig(unicornOptions, internalOptions),
+      isImportEnabled && importEslintConfig(importOptions, internalOptions),
+      isNodeEnabled && nodeEslintConfig(nodeOptions, internalOptions),
+      isPromiseEnabled && promiseEslintConfig(promiseOptions, internalOptions),
+      isSonarEnabled && sonarEslintConfig(sonarOptions, internalOptions),
+      isTailwindEnabled && tailwindEslintConfig(tailwindOptions, internalOptions),
+      isVueEnabled && vueEslintConfig(vueOptions, internalOptions),
+      tsEslintConfig(tsOptions, internalOptions), // Must come after all rulesets for vanilla JS
 
       {
         files: GLOB_CONFIG_FILES,
@@ -184,8 +163,12 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
         },
       },
 
+      ...(options.extraConfigs || []),
+
       // MUST be last
-      !options.disablePrettierIncompatibleRules && eslintConfigPrettier,
+      !options.disablePrettierIncompatibleRules && {
+        rules: omit(eslintConfigPrettier.rules, ['curly', 'unicorn/template-indent']),
+      },
     ]
       // eslint-disable-next-line no-implicit-coercion
       .filter((v) => !!v)

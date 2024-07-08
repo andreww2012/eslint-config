@@ -1,11 +1,17 @@
+import {toArray} from '@antfu/utils';
 // @ts-expect-error no typings
 import pluginVue from 'eslint-plugin-vue';
 import pluginVueA11y from 'eslint-plugin-vuejs-accessibility';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import parserVue from 'vue-eslint-parser';
-import {ERROR, OFF, WARNING} from '../constants';
-import {GLOB_VUE} from '../globs';
-import type {FlatConfigEntry} from '../types';
+import {ERROR, GLOB_VUE, OFF} from '../constants';
+import type {
+  ConfigSharedOptions,
+  FlatConfigEntry,
+  InternalConfigOptions,
+  RuleOverrides,
+} from '../types';
+import {genFlatConfigEntryName, warnUnlessForcedError} from '../utils';
 import {RULE_CAMELCASE_OPTIONS, RULE_EQEQEQ_OPTIONS} from './js';
 
 type WellKnownSfcBlocks =
@@ -17,16 +23,18 @@ type WellKnownSfcBlocks =
   | 'style:not([scoped])'
   | 'style[scoped]';
 
-// TODO eslint-plugin-pinia
-export interface VueEslintConfigOptions {
-  files?: FlatConfigEntry['files'];
-  overrides?: FlatConfigEntry['rules'];
-  enableTs?: boolean;
+export interface VueEslintConfigOptions extends ConfigSharedOptions<`vue/${string}`> {
+  /**
+   * @default auto-detected
+   */
   majorVersion?: 2 | 3;
   fullVersion?: string;
+  enableTs?: boolean;
+  /**
+   * @default `true` if `enableTs` is `true`
+   */
   enforceTypescriptInScriptSection?: boolean;
   knownComponentNames?: string[];
-  noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles?: boolean;
   enforceApiStyle?: 'setup' | 'options';
   /**
    * @default 'runtime'
@@ -38,13 +46,15 @@ export interface VueEslintConfigOptions {
    * @default 'template-first'
    */
   sfcBlockOrder?: 'template-first' | 'script-first' | (WellKnownSfcBlocks & {})[];
+  noPropertyAccessFromIndexSignatureSetInTsconfigForVueFiles?: boolean;
+  doNotRequireComponentNamesToBeMultiWordForPatterns?: string | string[];
 
   /**
    * Enables A11Y (accessibility) rules for Vue SFC templates
    * @default true
    */
   a11y?: boolean;
-  overridesA11y?: FlatConfigEntry['rules'];
+  overridesA11y?: RuleOverrides<`vuejs-accessibility/${string}`>;
 
   /**
    * Detected automatically by checking if `nuxt` package is installed (at any level). Pass a false value or a Nuxt version to explicitly disable or enable Nuxt-specific rules or tweaks.
@@ -56,7 +66,10 @@ export interface VueEslintConfigOptions {
   nuxtOrVueProjectDir?: string;
 }
 
-export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfigEntry[] => {
+export const vueEslintConfig = (
+  options: VueEslintConfigOptions = {},
+  internalOptions: InternalConfigOptions = {},
+): FlatConfigEntry[] => {
   const {
     majorVersion = 3,
     enforceTypescriptInScriptSection = options.enableTs,
@@ -65,11 +78,14 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
 
   const files = options.files || [GLOB_VUE];
 
-  const subVersion = options?.fullVersion?.replace(/^\d+\./, '');
+  const vueMajorAndMinorVersion = Number.parseFloat(options.fullVersion || '');
   const isVue2 = majorVersion === 2;
   const isVue3 = majorVersion === 3;
-  const isMin3_3 = isVue3 && subVersion?.startsWith('3.');
-  const isMin3_4 = isVue3 && subVersion?.startsWith('4.');
+  const isMin3_3 = isVue3 && vueMajorAndMinorVersion >= 3.3;
+  const isMin3_4 = isVue3 && vueMajorAndMinorVersion >= 3.4;
+  const isLess2_5 = isVue2 && vueMajorAndMinorVersion < 2.5;
+  const isLess2_6 = isVue2 && vueMajorAndMinorVersion < 2.6;
+  const isLess3_1 = vueMajorAndMinorVersion < 3.1;
 
   // LEGEND:
   // 3️⃣ = Only in Vue 3 recommended
@@ -104,11 +120,11 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
     // 'vue/no-deprecated-inline-template': ERROR, // 3️⃣
     // 'vue/no-deprecated-props-default-this': ERROR, // 3️⃣
     // 'vue/no-deprecated-router-link-tag-prop': ERROR, // 3️⃣
-    // 'vue/no-deprecated-scope-attribute': ERROR, // TODO 3️⃣ deprecated in 2.5.0
-    // 'vue/no-deprecated-slot-attribute': ERROR, // TODO 3️⃣ deprecated in 2.6.0
-    // 'vue/no-deprecated-slot-scope-attribute': ERROR, // TODO 3️⃣ deprecated in 2.6.0
+    'vue/no-deprecated-scope-attribute': isLess2_5 ? OFF : ERROR, // 3️⃣ deprecated in 2.5.0
+    'vue/no-deprecated-slot-attribute': isLess2_6 ? OFF : ERROR, // 3️⃣ deprecated in 2.6.0
+    'vue/no-deprecated-slot-scope-attribute': isLess2_6 ? OFF : ERROR, // 3️⃣ deprecated in 2.6.0
     // 'vue/no-deprecated-v-bind-sync': ERROR, // 3️⃣
-    // 'vue/no-deprecated-v-is': ERROR, // TODO 3️⃣ deprecated in 3.1.0
+    'vue/no-deprecated-v-is': isLess3_1 ? OFF : ERROR, // 3️⃣ deprecated in 3.1.0
     // 'vue/no-deprecated-v-on-native-modifier': ERROR, // 3️⃣
     // 'vue/no-deprecated-v-on-number-modifiers': ERROR, // 3️⃣
     // 'vue/no-deprecated-vue-config-keycodes': ERROR, // 3️⃣
@@ -319,7 +335,7 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
         ignorePatterns: [...(options.knownComponentNames || [])],
       },
     ],
-    // TODO consider enabling if script setup is enforced
+    // TODO enable if script setup is enforced?
     // 'vue/no-undef-properties': OFF,
     'vue/no-unsupported-features': [ERROR, {version: `^${options.fullVersion || majorVersion}`}],
     'vue/no-unused-emit-declarations': ERROR,
@@ -386,7 +402,7 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
     // 'vue/max-len': OFF,
     // 'vue/multiline-ternary': OFF,
     'vue/no-console': ERROR,
-    'vue/no-constant-condition': WARNING,
+    ...warnUnlessForcedError(internalOptions, 'vue/no-constant-condition'),
     'vue/no-empty-pattern': ERROR,
     // 'vue/no-extra-parens': OFF,
     'vue/no-irregular-whitespace': ERROR,
@@ -422,6 +438,7 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
     [
       {
         files,
+        ...(options.ignores && {ignores: options.ignores}),
 
         languageOptions: {
           parser: parserVue,
@@ -436,9 +453,13 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
         },
 
         rules: {
-          ...pluginVue.configs[isVue3 ? 'vue3-recommended' : 'vue2-recommended'].rules,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          ...(pluginVue.configs[isVue3 ? 'vue3-recommended' : 'vue2-recommended']
+            .rules as FlatConfigEntry['rules']),
           ...rules,
+          ...options.overrides,
         },
+        name: genFlatConfigEntryName('vue'),
       },
 
       {
@@ -446,10 +467,13 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
           `${options.nuxtOrVueProjectDir}pages/**/*.vue`,
           `${options.nuxtOrVueProjectDir}views/**/*.vue`,
           isNuxtEnabled && [nuxtLayoutsFiles, 'app.vue', 'error.vue'],
+
+          ...toArray(options.doNotRequireComponentNamesToBeMultiWordForPatterns),
         ].filter((v) => v !== false),
         rules: {
           'vue/multi-word-component-names': OFF,
         },
+        name: genFlatConfigEntryName('vue/allow-single-word-component-names'),
       },
 
       isNuxtEnabled && {
@@ -457,6 +481,7 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
         rules: {
           'vue/require-explicit-slots': OFF,
         },
+        name: genFlatConfigEntryName('vue/allow-implicit-slots'),
       },
 
       {
@@ -469,9 +494,9 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
           ],
         ].filter((v) => v !== false),
         rules: {
-          // TODO
-          // 'import/no-default-export': OFF,
+          'import/no-default-export': OFF,
         },
+        name: genFlatConfigEntryName('vue/allow-default-export'),
       },
 
       a11y && [
@@ -502,6 +527,7 @@ export const vueEslintConfig = (options: VueEslintConfigOptions = {}): FlatConfi
 
             ...options.overridesA11y,
           },
+          name: genFlatConfigEntryName('vue/a11y'),
         },
       ],
     ]

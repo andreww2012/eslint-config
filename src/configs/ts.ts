@@ -2,326 +2,325 @@ import {toArray} from '@antfu/utils';
 import type {ParserOptions} from '@typescript-eslint/parser';
 import type Eslint from 'eslint';
 import type {ESLintRules as BuiltinEslintRules} from 'eslint/rules';
+// @ts-expect-error no typings
+import eslintPluginNoTypeAssertion from 'eslint-plugin-no-type-assertion';
 import {parser as parserTs, plugin as pluginTs} from 'typescript-eslint';
-import {ERROR, OFF, WARNING} from '../constants';
-import {GLOB_TS, GLOB_TSX} from '../globs';
-import type {FlatConfigEntry} from '../types';
-import {disableAutofixForRule, genRuleOverrideFn} from '../utils';
+import {ERROR, GLOB_TS, GLOB_TSX, OFF, WARNING} from '../constants';
+import type {
+  ConfigSharedOptions,
+  FlatConfigEntry,
+  InternalConfigOptions,
+  RuleOverrides,
+} from '../types';
+import {
+  disableAutofixForRule,
+  genFlatConfigEntryName,
+  genRuleOverrideFn,
+  warnUnlessForcedError,
+} from '../utils';
 import {
   RULE_NO_UNUSED_EXPRESSIONS_OPTIONS,
   RULE_NO_USE_BEFORE_DEFINE_OPTIONS,
   RULE_PREFER_DESTRUCTURING_OPTIONS,
 } from './js';
 
-export interface TsEslintConfigOptions {
-  files?: FlatConfigEntry['files'];
+export interface TsEslintConfigOptions extends ConfigSharedOptions<`@typescript-eslint/${string}`> {
   tsconfigPath?: string | string[];
+  typescriptVersion?: string;
   parserOptions?: Omit<ParserOptions, 'sourceType'> & {
     sourceType?: Eslint.Linter.ParserOptions['sourceType'];
   };
+  /**
+   * Pass `true` to enable type-aware checks for all `files`
+   * @default true
+   */
+  filesTypeAware?: FlatConfigEntry['files'] | boolean;
+  overridesTypeAware?: RuleOverrides<`@typescript-eslint/${string}`>;
   /**
    * Do not put `.` (dot) before an extension
    * @example ['vue']
    */
   extraFileExtensions?: string[];
-  /**
-   * Pass `true` to enable type-aware checks for all `files`
-   * @default false
-   */
-  filesTypeAware?: FlatConfigEntry['files'] | boolean;
-  overrides?: FlatConfigEntry['rules'];
-  overridesTypeAware?: FlatConfigEntry['rules'];
-  // TODO no-type-assertion
+  noTypeAssertion?: boolean | 'warning';
 }
 
 const overrideBaseRule = genRuleOverrideFn('@typescript-eslint');
 
-export const tsEslintConfig = (options: TsEslintConfigOptions = {}): FlatConfigEntry[] => {
-  const tsFiles = options.files || [
+export const tsEslintConfig = (
+  options: TsEslintConfigOptions = {},
+  internalOptions: InternalConfigOptions = {},
+): FlatConfigEntry[] => {
+  const tsFilesRegular = options.files || [
     GLOB_TS,
     GLOB_TSX,
     ...(options.extraFileExtensions || []).map((ext) => `**/*.${ext}`),
   ];
   const tsFilesTypeAware =
-    options.filesTypeAware === true
-      ? [...tsFiles]
+    options.filesTypeAware === true || options.filesTypeAware == null
+      ? [...tsFilesRegular]
       : options.filesTypeAware === false
         ? []
-        : options.filesTypeAware || [];
-  const allTsFiles = [...tsFiles, ...tsFilesTypeAware];
+        : options.filesTypeAware;
+  const allTsFiles = [...tsFilesRegular, ...tsFilesTypeAware];
 
-  const generateBaseOptions = ({
-    isTypeAware,
-  }: {
-    isTypeAware: boolean;
-  } & Pick<FlatConfigEntry, 'files' | 'ignores'>): FlatConfigEntry => ({
+  const tsVersion = options.typescriptVersion
+    ? Number.parseFloat(options.typescriptVersion)
+    : undefined;
+
+  const generateBaseOptions = (isTypeAware?: boolean): FlatConfigEntry => ({
     languageOptions: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      parser: parserTs as any, // TODO
-      ...(isTypeAware && {
-        project: toArray(options.tsconfigPath),
-        tsconfigRootDir: process.cwd(), // TODO
-      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+      parser: parserTs as any,
       parserOptions: {
         extraFileExtensions: options.extraFileExtensions?.map((ext) => `.${ext}`),
         sourceType: 'module',
+        ...(isTypeAware && {
+          project: toArray(options.tsconfigPath),
+          tsconfigRootDir: process.cwd(),
+        }),
         ...options.parserOptions,
       },
     },
   });
 
-  const baseRegularRules = {
-    ...pluginTs.configs?.strict?.rules,
-    ...pluginTs.configs?.stylistic?.rules,
-  };
-  const baseTypeAwareRules = {
-    ...pluginTs.configs?.strictTypeCheckedOnly?.rules,
-    ...pluginTs.configs?.stylisticTypeCheckedOnly?.rules,
-  };
-
   // LEGEND:
   // ❄️ = Feature-frozen in ts-eslint
   // 👍 = Auto-checked and there's barely any need to use this rule
+  const typescriptRulesRegular: FlatConfigEntry<BuiltinEslintRules>['rules'] = {
+    ...pluginTs.configs?.strict?.rules,
+    ...pluginTs.configs?.stylistic?.rules,
 
-  const typescriptConfigRegular: FlatConfigEntry<BuiltinEslintRules> = {
-    files: tsFiles,
-    rules: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(baseRegularRules as any),
+    // 🔵 Strict - overrides
 
-      // 🔵 Strict - overrides
+    // '@typescript-eslint/ban-ts-comment': ERROR,
+    '@typescript-eslint/ban-types': [ERROR, {types: {object: false, '{}': false}}],
+    ...overrideBaseRule('no-array-constructor', ERROR),
+    // '@typescript-eslint/no-duplicate-enum-values': ERROR,
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-dynamic-delete'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-explicit-any', {
+      ignoreRestArgs: true,
+    }),
+    // '@typescript-eslint/no-extra-non-null-assertion': ERROR,
+    // '@typescript-eslint/no-extraneous-class': ERROR,
+    // '@typescript-eslint/no-invalid-void-type': ERROR,
+    ...overrideBaseRule('no-loss-of-precision', ERROR),
+    // '@typescript-eslint/no-misused-new': ERROR,
+    // '@typescript-eslint/no-namespace': ERROR,
+    // '@typescript-eslint/no-non-null-asserted-nullish-coalescing': ERROR,
+    // '@typescript-eslint/no-non-null-asserted-optional-chain': ERROR,
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-non-null-assertion'),
+    // '@typescript-eslint/no-this-alias': ERROR,
+    // '@typescript-eslint/no-unnecessary-type-constraint': ERROR,
+    // '@typescript-eslint/no-unsafe-declaration-merging': ERROR,
+    ...overrideBaseRule('no-unused-vars', ERROR, {ignoreRestSiblings: true}),
+    ...overrideBaseRule('no-useless-constructor', ERROR),
+    // '@typescript-eslint/no-var-requires': ERROR,
+    // '@typescript-eslint/prefer-as-const': ERROR,
+    '@typescript-eslint/prefer-literal-enum-member': [ERROR, {allowBitwiseExpressions: true}],
+    // '@typescript-eslint/triple-slash-reference': ERROR,
+    // '@typescript-eslint/unified-signatures': ERROR,
 
-      // '@typescript-eslint/ban-ts-comment': ERROR,
-      '@typescript-eslint/ban-types': [ERROR, {types: {object: false, '{}': false}}],
-      ...overrideBaseRule('no-array-constructor', ERROR),
-      // '@typescript-eslint/no-duplicate-enum-values': ERROR,
-      '@typescript-eslint/no-dynamic-delete': WARNING,
-      '@typescript-eslint/no-explicit-any': [WARNING, {ignoreRestArgs: true}],
-      // '@typescript-eslint/no-extra-non-null-assertion': ERROR,
-      // '@typescript-eslint/no-extraneous-class': ERROR,
-      // '@typescript-eslint/no-invalid-void-type': ERROR,
-      ...overrideBaseRule('no-loss-of-precision', ERROR),
-      // '@typescript-eslint/no-misused-new': ERROR,
-      // '@typescript-eslint/no-namespace': ERROR,
-      // '@typescript-eslint/no-non-null-asserted-nullish-coalescing': ERROR,
-      // '@typescript-eslint/no-non-null-asserted-optional-chain': ERROR,
-      '@typescript-eslint/no-non-null-assertion': WARNING,
-      // '@typescript-eslint/no-this-alias': ERROR,
-      // '@typescript-eslint/no-unnecessary-type-constraint': ERROR,
-      // '@typescript-eslint/no-unsafe-declaration-merging': ERROR,
-      ...overrideBaseRule('no-unused-vars', ERROR, {ignoreRestSiblings: true}),
-      ...overrideBaseRule('no-useless-constructor', ERROR),
-      // '@typescript-eslint/no-var-requires': ERROR,
-      // '@typescript-eslint/prefer-as-const': ERROR,
-      '@typescript-eslint/prefer-literal-enum-member': [ERROR, {allowBitwiseExpressions: true}],
-      // '@typescript-eslint/triple-slash-reference': ERROR,
-      // '@typescript-eslint/unified-signatures': ERROR,
+    // 🔵 Stylistic - overrides
 
-      // 🔵 Stylistic - overrides
+    // '@typescript-eslint/adjacent-overload-signatures': ERROR,
+    // '@typescript-eslint/array-type': ERROR,
+    // '@typescript-eslint/ban-tslint-comment': ERROR,
+    // '@typescript-eslint/class-literal-property-style': ERROR,
+    // '@typescript-eslint/consistent-generic-constructors': ERROR,
+    // '@typescript-eslint/consistent-indexed-object-style': ERROR,
+    // '@typescript-eslint/consistent-type-assertions': ERROR,
+    // '@typescript-eslint/consistent-type-definitions': ERROR,
+    // '@typescript-eslint/no-confusing-non-null-assertion': ERROR,
+    ...overrideBaseRule('no-empty-function', ERROR),
+    '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
+    // '@typescript-eslint/no-inferrable-types': ERROR,
+    // '@typescript-eslint/prefer-for-of': ERROR,
+    // '@typescript-eslint/prefer-function-type': ERROR,
+    // '@typescript-eslint/prefer-namespace-keyword': ERROR,
 
-      // '@typescript-eslint/adjacent-overload-signatures': ERROR,
-      // '@typescript-eslint/array-type': ERROR,
-      // '@typescript-eslint/ban-tslint-comment': ERROR,
-      // '@typescript-eslint/class-literal-property-style': ERROR,
-      // '@typescript-eslint/consistent-generic-constructors': ERROR,
-      // '@typescript-eslint/consistent-indexed-object-style': ERROR,
-      // '@typescript-eslint/consistent-type-assertions': ERROR,
-      // '@typescript-eslint/consistent-type-definitions': ERROR,
-      // '@typescript-eslint/no-confusing-non-null-assertion': ERROR,
-      ...overrideBaseRule('no-empty-function', ERROR),
-      '@typescript-eslint/no-empty-interface': [ERROR, {allowSingleExtends: true}],
-      // '@typescript-eslint/no-inferrable-types': ERROR,
-      // '@typescript-eslint/prefer-for-of': ERROR,
-      // '@typescript-eslint/prefer-function-type': ERROR,
-      // '@typescript-eslint/prefer-namespace-keyword': ERROR,
+    // 🔵 Additional rules
 
-      // 🔵 Additional rules
-
-      ...overrideBaseRule('class-methods-use-this', ERROR, {
-        ignoreOverrideMethods: true,
-        ignoreClassesThatImplementAnInterface: true,
-      }),
-      '@typescript-eslint/consistent-type-imports': [
-        ERROR,
-        {
-          fixStyle: 'inline-type-imports', // TODO only available in TypeScript 4.5
-          disallowTypeAnnotations: false,
+    ...overrideBaseRule('class-methods-use-this', ERROR, {
+      ignoreOverrideMethods: true,
+      ignoreClassesThatImplementAnInterface: true,
+    }),
+    '@typescript-eslint/consistent-type-imports': [
+      ERROR,
+      {
+        ...(tsVersion && tsVersion >= 4.5 && {fixStyle: 'inline-type-imports'}),
+        disallowTypeAnnotations: false,
+      },
+    ],
+    ...overrideBaseRule('default-param-last', ERROR),
+    // '@typescript-eslint/explicit-function-return-type': OFF,
+    '@typescript-eslint/explicit-member-accessibility': [
+      ERROR,
+      {
+        accessibility: 'explicit',
+        overrides: {
+          constructors: 'no-public',
+          properties: 'off',
         },
-      ],
-      ...overrideBaseRule('default-param-last', ERROR),
-      // '@typescript-eslint/explicit-function-return-type': OFF,
-      '@typescript-eslint/explicit-member-accessibility': [
-        ERROR,
-        {
-          accessibility: 'explicit',
-          overrides: {
-            constructors: 'no-public',
-            properties: 'off',
-          },
-        },
-      ],
-      '@typescript-eslint/explicit-module-boundary-types': OFF,
-      // ...overrideBaseRule('init-declarations', OFF),
-      // ...overrideBaseRule('max-params', OFF),
-      // '@typescript-eslint/member-ordering': OFF, // ❄️
-      '@typescript-eslint/method-signature-style': ERROR,
-      // ...overrideBaseRule('no-dupe-class-members', OFF), // 👍
-      '@typescript-eslint/no-empty-object-type': [
-        ERROR,
-        {
-          allowInterfaces: 'with-single-extends',
-          allowObjectTypes: 'always',
-        },
-      ],
-      '@typescript-eslint/no-import-type-side-effects': ERROR,
-      // ...overrideBaseRule('no-invalid-this', OFF), // 👍
-      ...overrideBaseRule('no-loop-func', ERROR),
-      // ...overrideBaseRule('no-magic-numbers', OFF),
-      'no-redeclare': OFF,
-      // '@typescript-eslint/no-redeclare': OFF, // 👍
-      // '@typescript-eslint/no-require-imports': OFF,
-      // ...overrideBaseRule('no-restricted-imports', OFF),
-      ...overrideBaseRule('no-shadow', ERROR),
-      ...overrideBaseRule('no-unused-expressions', ERROR, RULE_NO_UNUSED_EXPRESSIONS_OPTIONS),
-      ...overrideBaseRule('no-use-before-define', ERROR, RULE_NO_USE_BEFORE_DEFINE_OPTIONS),
-      '@typescript-eslint/no-useless-empty-export': ERROR,
-      // '@typescript-eslint/parameter-properties': OFF,
-      // '@typescript-eslint/prefer-enum-initializers': OFF,
-      // '@typescript-eslint/typedef': OFF,
+      },
+    ],
+    '@typescript-eslint/explicit-module-boundary-types': OFF,
+    // ...overrideBaseRule('init-declarations', OFF),
+    // ...overrideBaseRule('max-params', OFF),
+    // '@typescript-eslint/member-ordering': OFF, // ❄️
+    '@typescript-eslint/method-signature-style': ERROR,
+    // ...overrideBaseRule('no-dupe-class-members', OFF), // 👍
+    '@typescript-eslint/no-empty-object-type': [
+      ERROR,
+      {
+        allowInterfaces: 'with-single-extends',
+        allowObjectTypes: 'always',
+      },
+    ],
+    '@typescript-eslint/no-import-type-side-effects': ERROR,
+    // ...overrideBaseRule('no-invalid-this', OFF), // 👍
+    ...overrideBaseRule('no-loop-func', ERROR),
+    // ...overrideBaseRule('no-magic-numbers', OFF),
+    'no-redeclare': OFF,
+    // '@typescript-eslint/no-redeclare': OFF, // 👍
+    // '@typescript-eslint/no-require-imports': OFF,
+    // ...overrideBaseRule('no-restricted-imports', OFF),
+    ...overrideBaseRule('no-shadow', ERROR),
+    ...overrideBaseRule('no-unused-expressions', ERROR, RULE_NO_UNUSED_EXPRESSIONS_OPTIONS),
+    ...overrideBaseRule('no-use-before-define', ERROR, RULE_NO_USE_BEFORE_DEFINE_OPTIONS),
+    '@typescript-eslint/no-useless-empty-export': ERROR,
+    // '@typescript-eslint/parameter-properties': OFF,
+    // '@typescript-eslint/prefer-enum-initializers': OFF,
+    // '@typescript-eslint/typedef': OFF,
 
-      // 🔵 Disable conflicting rules
+    // 🔵 Disable conflicting rules
 
-      'no-useless-constructor': OFF,
-      'dot-notation': OFF,
+    'no-useless-constructor': OFF,
+    'dot-notation': OFF,
 
-      ...options.overrides,
-    },
+    ...options.overrides,
   };
+  const typescriptRulesTypeAware: FlatConfigEntry<BuiltinEslintRules>['rules'] = {
+    ...pluginTs.configs?.strictTypeCheckedOnly?.rules,
+    ...pluginTs.configs?.stylisticTypeCheckedOnly?.rules,
 
-  const typescriptConfigTypeAware: FlatConfigEntry<BuiltinEslintRules> = {
-    files: tsFilesTypeAware,
-    rules: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(baseTypeAwareRules as any),
+    // 🔵 Strict - overrides
 
-      // 🔵 Strict - overrides
+    // '@typescript-eslint/await-thenable': ERROR,
+    // '@typescript-eslint/no-array-delete': ERROR,
+    // '@typescript-eslint/no-base-to-string': ERROR,
+    '@typescript-eslint/no-confusing-void-expression': [
+      ERROR,
+      {
+        ignoreArrowShorthand: true,
+      },
+    ],
+    // '@typescript-eslint/no-duplicate-type-constituents': ERROR,
+    // '@typescript-eslint/no-floating-promises': ERROR,
+    // '@typescript-eslint/no-for-in-array': ERROR,
+    ...overrideBaseRule('no-implied-eval', ERROR),
+    // '@typescript-eslint/no-meaningless-void-operator': ERROR,
+    // '@typescript-eslint/no-misused-promises': ERROR,
+    // '@typescript-eslint/no-mixed-enums': ERROR,
+    // '@typescript-eslint/no-redundant-type-constituents': ERROR,
+    // '@typescript-eslint/no-unnecessary-boolean-literal-compare': ERROR,
+    ...disableAutofixForRule('@typescript-eslint/no-unnecessary-condition', ERROR, {
+      allowConstantLoopConditions: true,
+    }),
+    // '@typescript-eslint/no-unnecessary-template-expression': ERROR,
+    // Reason for disabling autofix: could remove type aliases
+    ...disableAutofixForRule('@typescript-eslint/no-unnecessary-type-arguments', ERROR),
+    // '@typescript-eslint/no-unnecessary-type-assertion': ERROR,
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-argument'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-assignment'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-call'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-enum-comparison'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-member-access'),
+    ...warnUnlessForcedError(internalOptions, '@typescript-eslint/no-unsafe-return'),
+    'no-throw-literal': OFF, // Note: has different name
+    '@typescript-eslint/only-throw-error': [
+      ERROR,
+      {
+        allowThrowingUnknown: true,
+      },
+    ],
+    'unicorn/prefer-includes': OFF, // Note: in Unicorn
+    '@typescript-eslint/prefer-includes': ERROR,
+    ...overrideBaseRule('prefer-promise-reject-errors', ERROR),
+    // '@typescript-eslint/prefer-reduce-type-parameter': ERROR,
+    // '@typescript-eslint/prefer-return-this-type': ERROR,
+    ...overrideBaseRule('require-await', ERROR),
+    // '@typescript-eslint/restrict-plus-operands': ERROR,
+    '@typescript-eslint/restrict-template-expressions': [
+      ERROR,
+      {allowAny: false, allowRegExp: false},
+    ],
+    // '@typescript-eslint/unbound-method': ERROR,
+    // '@typescript-eslint/use-unknown-in-catch-callback-variable': ERROR,
 
-      // '@typescript-eslint/await-thenable': ERROR,
-      // '@typescript-eslint/no-array-delete': ERROR,
-      // '@typescript-eslint/no-base-to-string': ERROR,
-      '@typescript-eslint/no-confusing-void-expression': [
-        ERROR,
-        {
-          ignoreArrowShorthand: true,
-        },
-      ],
-      // '@typescript-eslint/no-duplicate-type-constituents': ERROR,
-      // '@typescript-eslint/no-floating-promises': ERROR,
-      // '@typescript-eslint/no-for-in-array': ERROR,
-      ...overrideBaseRule('no-implied-eval', ERROR),
-      // '@typescript-eslint/no-meaningless-void-operator': ERROR,
-      // '@typescript-eslint/no-misused-promises': ERROR,
-      // '@typescript-eslint/no-mixed-enums': ERROR,
-      // '@typescript-eslint/no-redundant-type-constituents': ERROR,
-      // '@typescript-eslint/no-unnecessary-boolean-literal-compare': ERROR,
-      ...disableAutofixForRule('@typescript-eslint/no-unnecessary-condition', ERROR, {
-        allowConstantLoopConditions: true,
-      }),
-      // '@typescript-eslint/no-unnecessary-template-expression': ERROR,
-      // Reason for disabling autofix: could remove type aliases
-      ...disableAutofixForRule('@typescript-eslint/no-unnecessary-type-arguments', ERROR),
-      // '@typescript-eslint/no-unnecessary-type-assertion': ERROR,
-      '@typescript-eslint/no-unsafe-argument': WARNING,
-      '@typescript-eslint/no-unsafe-assignment': WARNING,
-      '@typescript-eslint/no-unsafe-call': WARNING,
-      '@typescript-eslint/no-unsafe-enum-comparison': WARNING,
-      '@typescript-eslint/no-unsafe-member-access': WARNING,
-      '@typescript-eslint/no-unsafe-return': WARNING,
-      'no-throw-literal': OFF, // Note: has different name
-      '@typescript-eslint/only-throw-error': [
-        ERROR,
-        {
-          allowThrowingUnknown: true,
-        },
-      ],
-      'unicorn/prefer-includes': OFF, // Note: in Unicorn
-      '@typescript-eslint/prefer-includes': ERROR,
-      ...overrideBaseRule('prefer-promise-reject-errors', ERROR),
-      // '@typescript-eslint/prefer-reduce-type-parameter': ERROR,
-      // '@typescript-eslint/prefer-return-this-type': ERROR,
-      ...overrideBaseRule('require-await', ERROR),
-      // '@typescript-eslint/restrict-plus-operands': ERROR,
-      '@typescript-eslint/restrict-template-expressions': [
-        ERROR,
-        {allowAny: false, allowRegExp: false},
-      ],
-      // '@typescript-eslint/unbound-method': ERROR,
-      // '@typescript-eslint/use-unknown-in-catch-callback-variable': ERROR,
+    // 🔵 Stylistic - overrides
 
-      // 🔵 Stylistic - overrides
+    ...overrideBaseRule('dot-notation', ERROR, {
+      allowIndexSignaturePropertyAccess: true,
+    }),
+    // '@typescript-eslint/non-nullable-type-assertion-style': ERROR,
+    '@typescript-eslint/prefer-nullish-coalescing': OFF,
+    // '@typescript-eslint/prefer-optional-chain': ERROR,
+    '@typescript-eslint/prefer-string-starts-ends-with': [
+      ERROR,
+      {
+        allowSingleElementEquality: 'always',
+      },
+    ],
 
-      ...overrideBaseRule('dot-notation', ERROR, {
-        allowIndexSignaturePropertyAccess: true,
-      }),
-      // '@typescript-eslint/non-nullable-type-assertion-style': ERROR,
-      '@typescript-eslint/prefer-nullish-coalescing': OFF,
-      // '@typescript-eslint/prefer-optional-chain': ERROR,
-      '@typescript-eslint/prefer-string-starts-ends-with': [
-        ERROR,
-        {
-          allowSingleElementEquality: true,
-        },
-      ],
+    // 🔵 Additional rules
 
-      // 🔵 Additional rules
+    // ...overrideBaseRule('consistent-return', OFF),
+    '@typescript-eslint/consistent-type-exports': [
+      ERROR,
+      {fixMixedExportsWithInlineTypeSpecifier: true},
+    ],
+    // '@typescript-eslint/naming-convention': OFF, // ❄️
+    // '@typescript-eslint/no-unnecessary-qualifier': OFF,
+    '@typescript-eslint/no-unsafe-unary-minus': ERROR,
+    ...overrideBaseRule('prefer-destructuring', ERROR, RULE_PREFER_DESTRUCTURING_OPTIONS),
+    'unicorn/prefer-array-find': OFF, // Note: in Unicorn
+    '@typescript-eslint/prefer-find': ERROR,
+    '@typescript-eslint/prefer-readonly': ERROR,
+    // '@typescript-eslint/prefer-readonly-parameter-types': OFF,
+    // '@typescript-eslint/prefer-regexp-exec': OFF,
+    '@typescript-eslint/promise-function-async': ERROR,
+    // '@typescript-eslint/require-array-sort-compare': OFF,
+    // Note: has different name. Also note that the original rule is deprecated and not included in this config, but we disable it anyway just for safety
+    'no-return-await': OFF,
+    '@typescript-eslint/return-await': [ERROR, 'always'],
+    // '@typescript-eslint/strict-boolean-expressions': OFF,
+    '@typescript-eslint/switch-exhaustiveness-check': ERROR,
 
-      // ...overrideBaseRule('consistent-return', OFF),
-      '@typescript-eslint/consistent-type-exports': [
-        ERROR,
-        {fixMixedExportsWithInlineTypeSpecifier: true},
-      ],
-      // '@typescript-eslint/naming-convention': OFF, // ❄️
-      // '@typescript-eslint/no-unnecessary-qualifier': OFF,
-      '@typescript-eslint/no-unsafe-unary-minus': ERROR,
-      ...overrideBaseRule('prefer-destructuring', ERROR, RULE_PREFER_DESTRUCTURING_OPTIONS),
-      'unicorn/prefer-array-find': OFF, // Note: in Unicorn
-      '@typescript-eslint/prefer-find': ERROR,
-      '@typescript-eslint/prefer-readonly': ERROR,
-      // '@typescript-eslint/prefer-readonly-parameter-types': OFF,
-      // '@typescript-eslint/prefer-regexp-exec': OFF,
-      '@typescript-eslint/promise-function-async': ERROR,
-      // '@typescript-eslint/require-array-sort-compare': OFF,
-      // Note: has different name. Also note that the original rule is deprecated and not included in this config, but we disable it anyway just for safety
-      'no-return-await': OFF,
-      '@typescript-eslint/return-await': [ERROR, 'always'],
-      // '@typescript-eslint/strict-boolean-expressions': OFF,
-      '@typescript-eslint/switch-exhaustiveness-check': ERROR,
-
-      ...options.overridesTypeAware,
-    },
+    ...options.overridesTypeAware,
   };
 
   return (
     [
       {
         plugins: {
-          '@typescript-eslint': pluginTs as never,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+          '@typescript-eslint': pluginTs as any,
         },
       },
 
-      generateBaseOptions({
-        isTypeAware: false,
-        files: tsFiles,
-      }),
-      typescriptConfigRegular,
+      {
+        ...generateBaseOptions(false),
+        files: tsFilesRegular,
+        rules: typescriptRulesRegular,
+        name: genFlatConfigEntryName('ts/regular-rules'),
+      },
 
-      options.filesTypeAware && [
-        generateBaseOptions({
-          isTypeAware: true,
-          files: tsFilesTypeAware,
-        }),
-        typescriptConfigTypeAware,
-      ],
+      tsFilesTypeAware.length > 0 && {
+        ...generateBaseOptions(true),
+        files: tsFilesTypeAware,
+        rules: typescriptRulesTypeAware,
+        name: genFlatConfigEntryName('ts/type-aware-rules'),
+      },
 
       // Handled by TS compiler
       {
@@ -349,6 +348,7 @@ export const tsEslintConfig = (options: TsEslintConfigOptions = {}): FlatConfigE
           // 'no-unreachable': OFF,
           'no-unsafe-negation': OFF,
         },
+        name: genFlatConfigEntryName('ts/disable-handled-by-ts-compiler-rules'),
       },
 
       {
@@ -364,6 +364,19 @@ export const tsEslintConfig = (options: TsEslintConfigOptions = {}): FlatConfigE
           'import/no-default-export': OFF,
           'import/newline-after-import': OFF,
         },
+        name: genFlatConfigEntryName('ts/dts'),
+      },
+
+      options.noTypeAssertion && {
+        plugins: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          'no-type-assertion': eslintPluginNoTypeAssertion,
+        } as never,
+        rules: {
+          'no-type-assertion/no-type-assertion':
+            options.noTypeAssertion === 'warning' ? WARNING : ERROR,
+        },
+        name: genFlatConfigEntryName('ts/no-type-assertion'),
       },
     ]
       .flat()

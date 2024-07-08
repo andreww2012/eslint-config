@@ -1,36 +1,41 @@
 // @ts-expect-error no typings
 import eslingPluginTailwind from 'eslint-plugin-tailwindcss';
 import {OFF} from '../constants';
-import type {FlatConfigEntry} from '../types';
+import type {ConfigSharedOptions, FlatConfigEntry, InternalConfigOptions} from '../types';
+import {genFlatConfigEntryName, warnUnlessForcedError} from '../utils';
 
-export interface TailwindEslintConfigOptions {
-  files?: FlatConfigEntry['files'];
-  overrides?: FlatConfigEntry['rules'];
-}
+export interface TailwindEslintConfigOptions extends ConfigSharedOptions<`tailwindcss/${string}`> {}
 
 export const tailwindEslintConfig = (
   options: TailwindEslintConfigOptions = {},
+  internalOptions: InternalConfigOptions = {},
 ): FlatConfigEntry[] => {
+  const rules: FlatConfigEntry['rules'] = {
+    ...warnUnlessForcedError(internalOptions, 'tailwindcss/classnames-order'),
+    ...warnUnlessForcedError(internalOptions, 'tailwindcss/enforces-negative-arbitrary-values'),
+    ...warnUnlessForcedError(internalOptions, 'tailwindcss/enforces-shorthand'),
+    ...warnUnlessForcedError(internalOptions, 'tailwindcss/migration-from-tailwind-2'),
+    // 'tailwindcss/no-arbitrary-value': OFF,
+    // 'tailwindcss/no-contradicting-classname': ERROR,
+    'tailwindcss/no-custom-classname': OFF,
+    ...warnUnlessForcedError(internalOptions, 'tailwindcss/no-unnecessary-arbitrary-value'),
+  };
+
   return [
     {
-      ...(options.files && {files: options.files}),
       plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         tailwindcss: eslingPluginTailwind,
       },
+      ...(options.files && {files: options.files}),
+      ...(options.ignores && {ignores: options.ignores}),
       rules: {
-        ...eslingPluginTailwind.configs.recommended.rules,
-
-        // 'tailwindcss/classnames-order': WARN,
-        // 'tailwindcss/enforces-negative-arbitrary-values': WARN,
-        // 'tailwindcss/enforces-shorthand': WARN,
-        // 'tailwindcss/migration-from-tailwind-2': WARN,
-        // 'tailwindcss/no-arbitrary-value': OFF,
-        'tailwindcss/no-custom-classname': OFF,
-        // 'tailwindcss/no-contradicting-classname': ERROR,
-        // 'tailwindcss/no-unnecessary-arbitrary-value': WARN,
-
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        ...(eslingPluginTailwind.configs.recommended.rules as FlatConfigEntry['rules']),
+        ...rules,
         ...options.overrides,
       },
+      name: genFlatConfigEntryName('tailwind'),
     },
   ];
 };
