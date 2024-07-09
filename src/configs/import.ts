@@ -71,7 +71,7 @@ export const importEslintConfig = (
     // 'import/no-internal-modules': OFF,
     ...warnUnlessForcedError(internalOptions, 'import/no-mutable-exports'),
     'import/no-named-as-default-member': OFF,
-    // 'import/no-named-as-default': ERROR,
+    'import/no-named-as-default': OFF, // Not very useful + false positives for axios@1.6.7?
     // 'import/no-named-default': OFF,
     // 'import/no-named-export': OFF,
     // 'import/no-namespace': OFF,
@@ -128,6 +128,7 @@ export const importEslintConfig = (
       },
       rules: {
         ...pluginRenamer(eslintPluginImportX.configs.recommended.rules),
+        ...(isTsEnabled && pluginRenamer(eslintPluginImportX.configs.typescript.rules)),
         ...rules,
         ...options.overrides,
       },

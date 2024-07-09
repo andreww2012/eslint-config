@@ -176,6 +176,7 @@ export const tsEslintConfig = (
     // '@typescript-eslint/no-require-imports': OFF,
     // ...overrideBaseRule('no-restricted-imports', OFF),
     ...overrideBaseRule('no-shadow', ERROR),
+    '@typescript-eslint/no-unnecessary-parameter-property-assignment': ERROR,
     ...overrideBaseRule('no-unused-expressions', ERROR, RULE_NO_UNUSED_EXPRESSIONS_OPTIONS),
     ...overrideBaseRule('no-use-before-define', ERROR, RULE_NO_USE_BEFORE_DEFINE_OPTIONS),
     '@typescript-eslint/no-useless-empty-export': ERROR,
@@ -206,7 +207,13 @@ export const tsEslintConfig = (
       },
     ],
     // '@typescript-eslint/no-duplicate-type-constituents': ERROR,
-    // '@typescript-eslint/no-floating-promises': ERROR,
+    '@typescript-eslint/no-floating-promises': [
+      ERROR,
+      {
+        checkThenables: true,
+        ignoreVoid: true, // Default
+      },
+    ],
     // '@typescript-eslint/no-for-in-array': ERROR,
     ...overrideBaseRule('no-implied-eval', ERROR),
     // '@typescript-eslint/no-meaningless-void-operator': ERROR,
@@ -279,7 +286,7 @@ export const tsEslintConfig = (
     '@typescript-eslint/prefer-readonly': ERROR,
     // '@typescript-eslint/prefer-readonly-parameter-types': OFF,
     // '@typescript-eslint/prefer-regexp-exec': OFF,
-    '@typescript-eslint/promise-function-async': ERROR,
+    // '@typescript-eslint/promise-function-async': OFF,
     // '@typescript-eslint/require-array-sort-compare': OFF,
     // Note: has different name. Also note that the original rule is deprecated and not included in this config, but we disable it anyway just for safety
     'no-return-await': OFF,

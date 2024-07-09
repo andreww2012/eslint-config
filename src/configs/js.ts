@@ -166,7 +166,7 @@ export const jsEslintConfig = (
     'no-array-constructor': ERROR,
     // 'no-bitwise': OFF,
     'no-caller': ERROR,
-    'no-console': [ERROR, {allow: ['warn', 'error']}],
+    ...warnUnlessForcedError(internalOptions, 'no-console', {allow: ['warn', 'error']}),
     // 'no-continue': OFF,
     // 'no-div-regex': OFF,
     'no-else-return': [ERROR, {allowElseIf: false}],

@@ -34,7 +34,7 @@ export interface VueEslintConfigOptions extends ConfigSharedOptions<`vue/${strin
    * @default `true` if `enableTs` is `true`
    */
   enforceTypescriptInScriptSection?: boolean;
-  knownComponentNames?: string[];
+  knownComponentNames?: (string | RegExp)[];
   enforceApiStyle?: 'setup' | 'options';
   /**
    * @default 'runtime'
@@ -248,7 +248,7 @@ export const vueEslintConfig = (
     // 🔵 Uncategorized
 
     ...(enforceTypescriptInScriptSection && {
-      'vue/block-lang': [ERROR, {script: {lang: 'ts'}}],
+      'vue/block-lang': [ERROR, {script: {lang: 'ts', allowNoLang: true}}],
     }),
     'vue/block-order': [
       ERROR,
@@ -355,7 +355,15 @@ export const vueEslintConfig = (
     // 'vue/no-v-text': OFF,
     'vue/padding-line-between-blocks': ERROR,
     // 'vue/padding-line-between-tags': OFF,
-    'vue/padding-lines-in-component-definition': ERROR,
+    'vue/padding-lines-in-component-definition': [
+      ERROR,
+      {
+        withinOption: {
+          // TODO understand the difference between `betweenItems` and `withinEach`: https://eslint.vuejs.org/rules/padding-lines-in-component-definition.html
+          props: 'ignore',
+        },
+      },
+    ],
     ...(isMin3_3 && {
       'vue/prefer-define-options': ERROR,
     }),
@@ -435,6 +443,8 @@ export const vueEslintConfig = (
     '@typescript-eslint/prefer-function-type': OFF,
     '@typescript-eslint/unified-signatures': OFF,
     'import/first': OFF, // May be wrong if multiple <script> blocks are present
+    'import/no-default-export': OFF,
+    'no-useless-assignment': OFF, // False positives in script setup
 
     ...options.overrides,
   };
