@@ -40,6 +40,9 @@ importers:
       eslint-plugin-promise:
         specifier: 6.4.0
         version: 6.4.0(eslint-ts-patch@9.5.0-0)
+      eslint-plugin-security:
+        specifier: 3.0.1
+        version: 3.0.1
       eslint-plugin-sonarjs:
         specifier: 1.0.3
         version: 1.0.3(eslint-ts-patch@9.5.0-0)
@@ -77,6 +80,9 @@ importers:
       '@types/eslint-config-prettier':
         specifier: 6.11.3
         version: 6.11.3
+      '@types/eslint-plugin-security':
+        specifier: 3.0.0
+        version: 3.0.0
       '@types/eslint__js':
         specifier: 8.42.3
         version: 8.42.3
@@ -576,6 +582,9 @@ packages:
 
   '@types/eslint-config-prettier@6.11.3':
     resolution: {integrity: sha512-3wXCiM8croUnhg9LdtZUJQwNcQYGWxxdOWDjPe1ykCqJFPVpzAKfs/2dgSoCtAvdPeaponcWPI7mPcGGp9dkKQ==}
+
+  '@types/eslint-plugin-security@3.0.0':
+    resolution: {integrity: sha512-CpJ7dhqhfURdYHAlaQM4vfl75lDYnGl5+EZKoO/fW0hEREZa9+EBn1g10XLDM6n5yJSuTAPn5afkM4vNzhlyFQ==}
 
   '@types/eslint@8.56.10':
     resolution: {integrity: sha512-Shavhk87gCtY2fhXDctcfS3e6FdxWkCx1iUZ9eEUbh7rTqlZT0/IzOkCOVt0fCjcFuZ9FPYfuezTBImfHCDBGQ==}
@@ -1097,6 +1106,10 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0 || ^9.0.0
+
+  eslint-plugin-security@3.0.1:
+    resolution: {integrity: sha512-XjVGBhtDZJfyuhIxnQ/WMm385RbX3DBu7H1J7HNNhmB2tnGxMeqVSnYv79oAj992ayvIBZghsymwkYFS6cGH4Q==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   eslint-plugin-sonarjs@1.0.3:
     resolution: {integrity: sha512-6s41HLPYPyDrp+5+7Db5yFYbod6h9pC7yx+xfcNwHRcLe1EZwbbQT/tdOAkR7ekVUkNGEvN3GmYakIoQUX7dEg==}
@@ -1895,6 +1908,9 @@ packages:
   safe-regex-test@1.0.0:
     resolution: {integrity: sha512-JBUUzyOgEwXQY1NuPtvcj/qcBDbDmEvWufhlnXZIm75DEHp+afM1r1ujJpJsV/gSM4t59tpDyPi1sd6ZaPFfsA==}
 
+  safe-regex@2.1.1:
+    resolution: {integrity: sha512-rx+x8AMzKb5Q5lQ95Zoi6ZbJqwCLkqi3XuJXp5P3rT8OEc6sZCJG5AE5dU3lsgRr/F4Bs31jSlVN+j5KrsGu9A==}
+
   semver@5.7.2:
     resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
     hasBin: true
@@ -2503,6 +2519,10 @@ snapshots:
   '@total-typescript/ts-reset@0.5.1': {}
 
   '@types/eslint-config-prettier@6.11.3': {}
+
+  '@types/eslint-plugin-security@3.0.0':
+    dependencies:
+      '@types/eslint': 8.56.10
 
   '@types/eslint@8.56.10':
     dependencies:
@@ -3154,6 +3174,10 @@ snapshots:
   eslint-plugin-promise@6.4.0(eslint-ts-patch@9.5.0-0):
     dependencies:
       eslint: eslint-ts-patch@9.5.0-0
+
+  eslint-plugin-security@3.0.1:
+    dependencies:
+      safe-regex: 2.1.1
 
   eslint-plugin-sonarjs@1.0.3(eslint-ts-patch@9.5.0-0):
     dependencies:
@@ -4008,6 +4032,10 @@ snapshots:
       call-bind: 1.0.2
       get-intrinsic: 1.2.1
       is-regex: 1.1.4
+
+  safe-regex@2.1.1:
+    dependencies:
+      regexp-tree: 0.1.27
 
   semver@5.7.2: {}
 

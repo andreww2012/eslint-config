@@ -10,6 +10,7 @@ import {type ImportEslintConfigOptions, importEslintConfig} from './configs/impo
 import {jsEslintConfig} from './configs/js';
 import {nodeEslintConfig} from './configs/node';
 import {promiseEslintConfig} from './configs/promise';
+import {securityEslintConfig} from './configs/security';
 import {sonarEslintConfig} from './configs/sonar';
 import {tailwindEslintConfig} from './configs/tailwind';
 import {type TsEslintConfigOptions, tsEslintConfig} from './configs/ts';
@@ -116,6 +117,13 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
     ...assignOptions(configsOptions, 'tailwind'),
   };
 
+  /* 🔵 SECURITY */
+
+  const isSecurityEnabled = Boolean(configsOptions.security ?? false);
+  const securityOptions: ImportEslintConfigOptions = {
+    ...assignOptions(configsOptions, 'security'),
+  };
+
   return (
     [
       // According to ESLint docs: "If `ignores` is used without any other keys in the configuration object, then the patterns act as global ignores <...> Patterns are added after the default patterns, which are ["**/node_modules/", ".git/"]." - https://eslint.org/docs/latest/use/configure/configuration-files#globally-ignoring-files-with-ignores
@@ -153,6 +161,7 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
       isPromiseEnabled && promiseEslintConfig(promiseOptions, internalOptions),
       isSonarEnabled && sonarEslintConfig(sonarOptions, internalOptions),
       isTailwindEnabled && tailwindEslintConfig(tailwindOptions, internalOptions),
+      isSecurityEnabled && securityEslintConfig(securityOptions, internalOptions),
       isTypescriptEnabled && tsEslintConfig(tsOptions, internalOptions), // Must come after all rulesets for vanilla JS
       isVueEnabled && vueEslintConfig(vueOptions, internalOptions), // Must come after ts
 

@@ -4,6 +4,7 @@ import type {ImportEslintConfigOptions} from './configs/import';
 import type {JsEslintConfigOptions} from './configs/js';
 import type {NodeEslintConfigOptions} from './configs/node';
 import type {PromiseEslintConfigOptions} from './configs/promise';
+import type {SecurityEslintConfigOptions} from './configs/security';
 import type {TailwindEslintConfigOptions} from './configs/tailwind';
 import type {TsEslintConfigOptions} from './configs/ts';
 import type {UnicornEslintConfigOptions} from './configs/unicorn';
@@ -104,6 +105,11 @@ export interface EslintConfigOptions {
      * `false` (do not enable Tailwind rules) <=> `tailwindcss` package is not installed (at any level) or `false` is explicitly passed
      */
     tailwind?: boolean | TailwindEslintConfigOptions;
+    /**
+     * NOTE: disabled by default
+     * @default false
+     */
+    security?: boolean | SecurityEslintConfigOptions;
   };
 }
 

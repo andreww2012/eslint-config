@@ -1,5 +1,5 @@
 diff --git a/index.js b/index.js
-index 6d1529ace6fd68521b7965a24ab9922138b4761d..31057a1c6565b364d54bd15af2ba3990cdee8ab8 100644
+index 6d1529ace6fd68521b7965a24ab9922138b4761d..05f2ba9182368b49ecf29713b05e24c5bfb0c66b 100644
 --- a/index.js
 +++ b/index.js
 @@ -34,9 +34,26 @@ const convertPluginId = (pluginId) => {
@@ -32,3 +32,13 @@ index 6d1529ace6fd68521b7965a24ab9922138b4761d..31057a1c6565b364d54bd15af2ba3990
  for (const rule of eslintRules) {
      const rulePath = node_path_1.default.posix.join(dirname, nodeModules, 'eslint/lib/rules', rule);
      const importedRule = require(rulePath);
+@@ -47,7 +64,8 @@ const eslintPlugins = node_fs_1.default
+     .readdirSync(node_path_1.default.join(dirname, nodeModules))
+     .filter((plugin) => (plugin.startsWith('eslint-plugin') || plugin.startsWith('@')) &&
+     plugin !== 'eslint-plugin-disable-autofix' &&
+-    plugin !== '@eslint');
++    plugin !== '@eslint' &&
++    plugin !== '@types');
+ for (const plugin of eslintPlugins) {
+     if (plugin.includes('@')) {
+         const pluginDirectories = node_fs_1.default

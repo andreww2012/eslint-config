@@ -4,9 +4,7 @@ import {ERROR, OFF} from '../constants';
 import type {ConfigSharedOptions, FlatConfigEntry, InternalConfigOptions} from '../types';
 import {disableAutofixForRule, genFlatConfigEntryName} from '../utils';
 
-export interface UnicornEslintConfigOptions extends ConfigSharedOptions<`unicorn/${string}`> {
-  overrides?: FlatConfigEntry['rules'];
-}
+export interface UnicornEslintConfigOptions extends ConfigSharedOptions<`unicorn/${string}`> {}
 
 export const unicornEslintConfig = (
   options: UnicornEslintConfigOptions = {},
