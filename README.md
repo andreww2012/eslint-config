@@ -1,44 +1,33 @@
-# ESLint 
+# esling-config-un
 
-A comprehensive ESLint config primarily designed for either generic TS/JS applications or Vue {2,3}/Nuxt 3 applications on Frontend.
+[![npm](https://img.shields.io/npm/v/esling-config-un)](https://www.npmjs.com/package/esling-config-un)
 
-As a bonus, this "template" includes a Nuxt 3 config that **completely disables** auto-importing functionality as well as some useful generic types & utilities.
+Grown out of the personal collection of rules, an ESLint config aspiring to cover as many rules as possible, be reasonably strict and easily configurable. Only supports ESLint 9 and flat config format.
 
-Everything is customizable, removable and overridable. Nothing is set in stone!
+Includes the following rules, configs & plugins:
+- [Vanilla ESLint rules](https://eslint.org/docs/latest/rules/)
+- [typescript-eslint](https://typescript-eslint.io/rules/)
+- [vue](https://eslint.vuejs.org/rules/)
+- [unicorn](https://www.npmjs.com/package/eslint-plugin-unicorn)
+- [node](https://www.npmjs.com/package/eslint-plugin-n) (`eslint-plugin-n` with `node` prefix)
+- [import](https://www.npmjs.com/package/eslint-plugin-import-x) (`eslint-plugin-import-x` with `import` prefix)
+- [promise](https://www.npmjs.com/package/eslint-plugin-promise)
+- [security](https://www.npmjs.com/package/eslint-plugin-security)
+- [sonar](https://www.npmjs.com/package/eslint-plugin-sonarjs)
+- [tailwind](https://www.npmjs.com/package/eslint-plugin-tailwindcss)
+- [eslint-config-prettier](https://www.npmjs.com/package/eslint-config-prettier) to disable Prettier-incompatible rules.
 
-## What's included
+By default, designed to be used separately from Prettier.
 
-- **Package manager:** `pnpm` with `shamefully-hoist=true` and `save-exact=true` set by default.
-- `type: module` & Node 18
-- **ESLint rules:**
-  - Official "recommended" config
-  - `config-airbnb-base`
-  - `config-prettier`
-    - Prettier is run **separately**.
-  - `@typescript-eslint/{eslint-plugin,parser}`
-  - `plugin-disable-autofix`
-  - `plugin-unicorn` & `plugin-sonarjs`
-  - `plugin-vue` & `plugin-vuejs-accessibility`
-  - `plugin-import` & `import-resolver-typescript`
-  - `plugin-promise`
-  - `plugin-n` (nodejs specific rules)
-  - `plugin-optimize-regex`
-  - `plugin-security`
-  - `plugin-no-type-assertion`
-- **Prettier plugins:**
-  - `organize-attributes` as well as Vue official style guide compliant attributes order for Vue templates.
-  - `plugin-tailwindcss`
-- tailwindcss
-  - Includes tailwind config with some useful utilities & bug fixes
-- [`ts-reset`](https://github.com/total-typescript/ts-reset)
-- VSCode specific files
-  - Settings to run Prettier on save for majority of the file types it's working with
-  - Some tailwindcss specific settings
-  - Extension recommendations
-- **Stylelint configs:**
-  - `config-recess-order` (to sort properties)
-  - `config-standard-scss` (general rules for CSS & SCSS)
-  - `config-prettier-scss` (to work with Prettier)
-  - `config-recommended-vue` (to support .vue files)
-- npm scripts to run linters & type checking
-- `lefthook` set up with pre-push hook to run linters
+## Usage
+
+In your `eslint.config.[cm]?js`:
+
+```js
+// @ts-check
+import {eslintConfig} from 'eslint-config-un';
+
+export default eslintConfig({
+  // your configuration (optional)
+});
+```
