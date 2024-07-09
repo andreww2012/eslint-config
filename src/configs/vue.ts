@@ -1,7 +1,8 @@
 import {toArray} from '@antfu/utils';
+import eslintPluginPinia from 'eslint-plugin-pinia';
 // @ts-expect-error no typings
-import pluginVue from 'eslint-plugin-vue';
-import pluginVueA11y from 'eslint-plugin-vuejs-accessibility';
+import eslintPluginVue from 'eslint-plugin-vue';
+import eslintPluginVueA11y from 'eslint-plugin-vuejs-accessibility';
 import globals from 'globals';
 import parserVue from 'vue-eslint-parser';
 import {ERROR, GLOB_VUE, OFF} from '../constants';
@@ -57,13 +58,19 @@ export interface VueEslintConfigOptions extends ConfigSharedOptions<`vue/${strin
   overridesA11y?: RuleOverrides<`vuejs-accessibility/${string}`>;
 
   /**
-   * Detected automatically by checking if `nuxt` package is installed (at any level). Pass a false value or a Nuxt version to explicitly disable or enable Nuxt-specific rules or tweaks.
+   * Enabled automatically by checking if `nuxt` package is installed (at any level). Pass a false value or a Nuxt version to explicitly disable or enable Nuxt-specific rules or tweaks.
    */
   nuxtMajorVersion?: false | 3;
   /**
    * @default ''
    */
   nuxtOrVueProjectDir?: string;
+
+  /**
+   * Enabled automatically by checking if `pinia` package is installed (at any level). Pass a false value to disable pinia-specific rules.
+   */
+  pinia?: boolean;
+  overridesPinia?: RuleOverrides<`pinia/${string}`>;
 }
 
 export const vueEslintConfig = (
@@ -90,7 +97,7 @@ export const vueEslintConfig = (
   const recommendedRules = // TODO report to Prettier?
     // prettier-ignore
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    (pluginVue.configs[isVue3 ? 'flat/recommended' : 'flat/vue2-recommended'] as FlatConfigEntry[]).find(
+    (eslintPluginVue.configs[isVue3 ? 'flat/recommended' : 'flat/vue2-recommended'] as FlatConfigEntry[]).find(
       (entry) =>
         entry.name === 'vue:recommended:rules' || entry.name === 'vue:vue2-recommended:rules',
     )?.rules;
@@ -457,7 +464,7 @@ export const vueEslintConfig = (
       {
         plugins: {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          vue: pluginVue,
+          vue: eslintPluginVue,
         },
         name: genFlatConfigEntryName('vue/setup'),
       },
@@ -467,7 +474,7 @@ export const vueEslintConfig = (
         ...(options.ignores && {ignores: options.ignores}),
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        processor: pluginVue.processors['.vue'],
+        processor: eslintPluginVue.processors['.vue'],
         languageOptions: {
           globals: globals.browser,
           parser: parserVue,
@@ -527,8 +534,9 @@ export const vueEslintConfig = (
       },
 
       a11y && [
-        ...pluginVueA11y.configs['flat/recommended'],
+        ...eslintPluginVueA11y.configs['flat/recommended'],
         {
+          files,
           rules: {
             // 'vuejs-accessibility/alt-text': ERROR,
             // 'vuejs-accessibility/anchor-has-content': ERROR,
@@ -557,6 +565,29 @@ export const vueEslintConfig = (
           name: genFlatConfigEntryName('vue/a11y'),
         },
       ],
+
+      options.pinia &&
+        ({
+          plugins: {
+            pinia: eslintPluginPinia,
+          },
+          rules: {
+            ...eslintPluginPinia.configs.recommended.rules,
+            // 'pinia/never-export-initialized-store': ERROR,
+            // 'pinia/no-duplicate-store-ids': ERROR,
+            // 'pinia/no-return-global-properties': ERROR,
+            'pinia/prefer-single-store-per-file': ERROR,
+            'pinia/prefer-use-store-naming-convention': [
+              ERROR,
+              {
+                checkStoreNameMismatch: true,
+              },
+            ],
+            // 'pinia/require-setup-store-properties-export': ERROR,
+            ...options.overridesPinia,
+          },
+          name: genFlatConfigEntryName('pinia'),
+        } as FlatConfigEntry),
     ]
       .flat()
       // eslint-disable-next-line no-implicit-coercion

@@ -66,6 +66,7 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
     majorVersion: vueMajorVersion,
     fullVersion: vueFullVersion,
     nuxtMajorVersion,
+    pinia: isPackageExists('pinia'),
     ...assignOptions(configsOptions, 'vue'),
   };
 

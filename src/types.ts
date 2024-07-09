@@ -10,16 +10,15 @@ import type {TsEslintConfigOptions} from './configs/ts';
 import type {UnicornEslintConfigOptions} from './configs/unicorn';
 import type {VueEslintConfigOptions} from './configs/vue';
 
-export type FlatConfigEntry<T extends Eslint.Linter.RulesRecord = Eslint.Linter.RulesRecord> =
-  Eslint.Linter.FlatConfig<T>;
+export type RulesRecord = Eslint.Linter.RulesRecord;
 
-export type RuleOverrides<T extends string | Eslint.Linter.RulesRecord> = FlatConfigEntry<
+export type FlatConfigEntry<T extends RulesRecord = RulesRecord> = Eslint.Linter.FlatConfig<T>;
+
+export type RuleOverrides<T extends string | RulesRecord> = FlatConfigEntry<
   T extends string ? Record<T, Eslint.Linter.RuleEntry> : T
 >['rules'];
 
-export type ConfigSharedOptions<
-  T extends string | Eslint.Linter.RulesRecord = Eslint.Linter.RulesRecord,
-> = Partial<
+export type ConfigSharedOptions<T extends string | RulesRecord = RulesRecord> = Partial<
   Pick<
     FlatConfigEntry<T extends string ? Record<T, Eslint.Linter.RuleEntry> : T>,
     'files' | 'ignores'

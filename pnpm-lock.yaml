@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   eslint-plugin-disable-autofix@5.0.1:
-    hash: odvaltfqfwgcnmfyfcrt32fanu
+    hash: iqks4j7r5fmpxadbkd4upohzyq
     path: patches/eslint-plugin-disable-autofix@5.0.1.patch
 
 importers:
@@ -24,7 +24,7 @@ importers:
         version: 3.6.1(@typescript-eslint/parser@7.16.0(eslint-ts-patch@9.5.0-0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint-ts-patch@9.5.0-0)
       eslint-plugin-disable-autofix:
         specifier: 5.0.1
-        version: 5.0.1(patch_hash=odvaltfqfwgcnmfyfcrt32fanu)(eslint-ts-patch@9.5.0-0)
+        version: 5.0.1(patch_hash=iqks4j7r5fmpxadbkd4upohzyq)(eslint-ts-patch@9.5.0-0)
       eslint-plugin-import:
         specifier: 2.29.1
         version: 2.29.1(@typescript-eslint/parser@7.16.0(eslint-ts-patch@9.5.0-0)(typescript@5.5.3))(eslint-import-resolver-typescript@3.6.1)(eslint-ts-patch@9.5.0-0)
@@ -37,6 +37,9 @@ importers:
       eslint-plugin-no-type-assertion:
         specifier: 1.3.0
         version: 1.3.0(eslint-ts-patch@9.5.0-0)
+      eslint-plugin-pinia:
+        specifier: 0.2.0
+        version: 0.2.0(eslint-ts-patch@9.5.0-0)(typescript@5.5.3)
       eslint-plugin-promise:
         specifier: 6.4.0
         version: 6.4.0(eslint-ts-patch@9.5.0-0)
@@ -1100,6 +1103,16 @@ packages:
     engines: {node: '>=12.0.0', yarn: ^1.13.0}
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0
+
+  eslint-plugin-pinia@0.2.0:
+    resolution: {integrity: sha512-WM8TpTiWaueZX4XhuMZHdcwJxUV+mS6ZN+y7WmJeRZ06TZSlcKm3kDAK0pZq5+6SGszz+D0dIXlinoUyDpFCAw==}
+    engines: {node: 14.x || >= 16}
+    peerDependencies:
+      '@typescript-eslint/eslint-plugin': '*'
+      eslint: '>=8.0.0'
+    peerDependenciesMeta:
+      '@typescript-eslint/eslint-plugin':
+        optional: true
 
   eslint-plugin-promise@6.4.0:
     resolution: {integrity: sha512-/KWWRaD3fGkVCZsdR0RU53PSthFmoHVhZl+y9+6DqeDLSikLdlUVpVEAmI6iCRR5QyOjBYBqHZV/bdv4DJ4Gtw==}
@@ -3097,7 +3110,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-disable-autofix@5.0.1(patch_hash=odvaltfqfwgcnmfyfcrt32fanu)(eslint-ts-patch@9.5.0-0):
+  eslint-plugin-disable-autofix@5.0.1(patch_hash=iqks4j7r5fmpxadbkd4upohzyq)(eslint-ts-patch@9.5.0-0):
     dependencies:
       app-root-path: 3.1.0
       eslint: eslint-ts-patch@9.5.0-0
@@ -3170,6 +3183,14 @@ snapshots:
   eslint-plugin-no-type-assertion@1.3.0(eslint-ts-patch@9.5.0-0):
     dependencies:
       eslint: eslint-ts-patch@9.5.0-0
+
+  eslint-plugin-pinia@0.2.0(eslint-ts-patch@9.5.0-0)(typescript@5.5.3):
+    dependencies:
+      '@typescript-eslint/utils': 7.16.0(eslint-ts-patch@9.5.0-0)(typescript@5.5.3)
+      eslint: eslint-ts-patch@9.5.0-0
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
 
   eslint-plugin-promise@6.4.0(eslint-ts-patch@9.5.0-0):
     dependencies:
