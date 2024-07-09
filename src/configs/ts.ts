@@ -192,8 +192,8 @@ export const tsEslintConfig = (
     ...options.overrides,
   };
   const typescriptRulesTypeAware: FlatConfigEntry<BuiltinEslintRules>['rules'] = {
-    ...pluginTs.configs?.strictTypeCheckedOnly?.rules,
-    ...pluginTs.configs?.stylisticTypeCheckedOnly?.rules,
+    ...pluginTs.configs?.['strict-type-checked-only']?.rules,
+    ...pluginTs.configs?.['stylistic-type-checked-only']?.rules,
 
     // 🔵 Strict - overrides
 

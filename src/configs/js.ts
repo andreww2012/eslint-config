@@ -278,6 +278,17 @@ export const jsEslintConfig = (
     // 🔵 Not in recommended - Layout & Formatting
 
     'unicode-bom': ERROR,
+
+    // 🔵 Stylistic
+
+    '@stylistic/quotes': [
+      ERROR,
+      'single', // Doesn't matter since `ignoreStringLiterals` is true - BUT will be used in fixes
+      {
+        ignoreStringLiterals: true,
+        avoidEscape: true, // TODO Doesn't have any effect `ignoreStringLiterals` is true - should propose auto-fix?
+      },
+    ],
   };
 
   return [

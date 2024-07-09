@@ -1,3 +1,4 @@
+import eslintPluginStylistic from '@stylistic/eslint-plugin';
 import eslintConfigPrettier from 'eslint-config-prettier';
 // @ts-expect-error no typings
 import pluginDisableAutofix from 'eslint-plugin-disable-autofix';
@@ -138,6 +139,7 @@ export const eslintConfig = (options: EslintConfigOptions = {}): FlatConfigEntry
           // Used in multiple configs and we can't define plugin multiple times
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           unicorn: eslintPluginUnicorn,
+          '@stylistic': eslintPluginStylistic,
         },
         languageOptions: {
           ecmaVersion: 'latest',
