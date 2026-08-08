@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This project is deprecated and way too old. Please do use [`eslint-config-un`](https://github.com/andreww2012/eslint-config-un) instead.
+
 # ESLint 
 
 A comprehensive ESLint config primarily designed for either generic TS/JS applications or Vue {2,3}/Nuxt 3 applications on Frontend.
